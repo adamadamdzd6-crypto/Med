@@ -259,6 +259,46 @@
       </button>
     </footer>
 
+    <!-- Floating Tower Quick Action Bar (Direct Canvas Upgrade & Management) -->
+    <div id="tower-quick-menu" class="tower-quick-menu hidden">
+      <div class="quick-menu-inner">
+        <div class="quick-tower-header">
+          <span class="quick-tower-icon" id="quick-tower-icon">🏹</span>
+          <div class="quick-tower-title-group">
+            <span class="quick-tower-name" id="quick-tower-name">رماة السهام</span>
+            <span class="quick-tower-level-badge" id="quick-tower-level">Lv.1</span>
+          </div>
+          <button id="btn-quick-close" class="quick-close-btn" title="إغلاق">✕</button>
+        </div>
+
+        <div class="quick-menu-buttons">
+          <!-- Fast Canvas Upgrade Button -->
+          <button id="btn-quick-upgrade" class="quick-btn btn-upgrade-quick">
+            <span class="qbtn-icon">⬆️</span>
+            <div class="qbtn-labels">
+              <span class="qbtn-title" data-i18n="upgrade">ترقية</span>
+              <span class="qbtn-cost" id="quick-upgrade-cost">150 🪙</span>
+            </div>
+          </button>
+
+          <!-- Fast Canvas Sell Button -->
+          <button id="btn-quick-sell" class="quick-btn btn-sell-quick">
+            <span class="qbtn-icon">💰</span>
+            <div class="qbtn-labels">
+              <span class="qbtn-title" data-i18n="sell">بيع</span>
+              <span class="qbtn-cost" id="quick-sell-refund">+70 🪙</span>
+            </div>
+          </button>
+
+          <!-- Full Inspector Modal Button -->
+          <button id="btn-quick-details" class="quick-btn btn-details-quick" title="تفاصيل كاملة">
+            <span class="qbtn-icon">⚙️</span>
+          </button>
+        </div>
+      </div>
+      <div class="quick-menu-arrow"></div>
+    </div>
+
     <!-- Weapon Upgrade & Management Popup -->
     <div id="weapon-modal" class="game-modal-overlay hidden">
       <div class="modal-card weapon-inspect-card">

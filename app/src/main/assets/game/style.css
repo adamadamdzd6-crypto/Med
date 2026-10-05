@@ -2789,3 +2789,214 @@ html, body {
   pointer-events: none;
 }
 
+/* ============================================================
+   FLOATING TOWER QUICK MANAGEMENT MENU (قائمة الترقية السريعة فوق الأبراج)
+   ============================================================ */
+.tower-quick-menu {
+  position: absolute;
+  z-index: 80;
+  transform: translate(-50%, -100%) translateY(-12px);
+  pointer-events: auto;
+  transition: opacity 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.85));
+}
+
+.tower-quick-menu.hidden {
+  opacity: 0;
+  transform: translate(-50%, -90%) scale(0.9);
+  pointer-events: none;
+}
+
+.quick-menu-inner {
+  background: rgba(14, 21, 32, 0.96);
+  backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(46, 204, 113, 0.45);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 0 18px rgba(46, 204, 113, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  min-width: 195px;
+  user-select: none;
+}
+
+.quick-tower-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 5px;
+}
+
+.quick-tower-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.quick-tower-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.quick-tower-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.quick-tower-level-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(241, 196, 15, 0.2);
+  color: #f1c40f;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+}
+
+.quick-close-btn {
+  background: transparent;
+  border: none;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.quick-close-btn:hover {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.15);
+}
+
+.quick-menu-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.qbtn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.qbtn-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: right;
+  line-height: 1.15;
+}
+
+.qbtn-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.qbtn-cost {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.9;
+  font-family: monospace;
+}
+
+/* Upgrade button styles */
+.btn-upgrade-quick {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.25), rgba(39, 174, 96, 0.4));
+  border-color: #2ecc71;
+  color: #2ecc71;
+  flex: 1.2;
+}
+
+.btn-upgrade-quick:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.4), rgba(39, 174, 96, 0.6));
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+
+.btn-upgrade-quick:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-upgrade-quick:disabled,
+.btn-upgrade-quick.locked {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #7f8c8d;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-upgrade-quick.max-level {
+  background: rgba(241, 196, 15, 0.15);
+  border-color: #f1c40f;
+  color: #f1c40f;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Sell button styles */
+.btn-sell-quick {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.35);
+  color: #e74c3c;
+  flex: 1;
+}
+
+.btn-sell-quick:hover {
+  background: rgba(231, 76, 60, 0.3);
+  border-color: #e74c3c;
+  transform: translateY(-1px);
+}
+
+.btn-sell-quick:active {
+  transform: scale(0.96);
+}
+
+/* Details button styles */
+.btn-details-quick {
+  background: rgba(52, 152, 219, 0.15);
+  border-color: rgba(52, 152, 219, 0.35);
+  color: #5dade2;
+  padding: 6px 8px;
+}
+
+.btn-details-quick:hover {
+  background: rgba(52, 152, 219, 0.3);
+  border-color: #3498db;
+  transform: translateY(-1px);
+}
+
+.btn-details-quick:active {
+  transform: scale(0.96);
+}
+
+/* Downward arrow indicator pointing at tower */
+.quick-menu-arrow {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #2ecc71;
+  margin: 0 auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+

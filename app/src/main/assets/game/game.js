@@ -1969,6 +1969,7 @@
       // Selection & Placement
       this.selectedShopWeapon = null;
       this.inspectingTower = null;
+      this.selectedTower = null;
       this.hoveredSlot = null;
 
       // Spell cooldown timers
@@ -2052,6 +2053,7 @@
           slot.tower.y = slot.y;
         }
       });
+      this.positionTowerQuickMenu();
     }
 
     // --- USER INTERFACE & BINDINGS ---
@@ -2757,6 +2759,21 @@
         }
       });
 
+      // Floating Tower Quick Menu affordability sync
+      if (this.selectedTower) {
+        const nextUp = this.selectedTower.upgrades && this.selectedTower.upgrades[this.selectedTower.level - 1];
+        const upBtn = document.getElementById("btn-quick-upgrade");
+        if (upBtn && nextUp) {
+          if (this.gold < nextUp.cost) {
+            upBtn.classList.add("locked");
+            upBtn.disabled = true;
+          } else {
+            upBtn.classList.remove("locked");
+            upBtn.disabled = false;
+          }
+        }
+      }
+
       // Spells status
       const repairBtn = document.getElementById("spell-repair");
       if (this.gold < 75 || this.spellCooldowns.repair > 0 || this.castleHp >= this.castleMaxHp) {
@@ -3102,6 +3119,47 @@
         this.handlePointerDown(px, py);
       });
 
+      // Floating Tower Quick Menu (on-canvas rapid upgrade, sell, and inspect)
+      const quickUpBtn = document.getElementById("btn-quick-upgrade");
+      if (quickUpBtn) {
+        quickUpBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.selectedTower) {
+            this.quickUpgradeTower(this.selectedTower);
+          }
+        });
+      }
+
+      const quickSellBtn = document.getElementById("btn-quick-sell");
+      if (quickSellBtn) {
+        quickSellBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.selectedTower) {
+            this.quickSellTower(this.selectedTower);
+          }
+        });
+      }
+
+      const quickDetailsBtn = document.getElementById("btn-quick-details");
+      if (quickDetailsBtn) {
+        quickDetailsBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.selectedTower) {
+            const tower = this.selectedTower;
+            this.closeTowerQuickMenu();
+            this.inspectTower(tower);
+          }
+        });
+      }
+
+      const quickCloseBtn = document.getElementById("btn-quick-close");
+      if (quickCloseBtn) {
+        quickCloseBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.closeTowerQuickMenu();
+        });
+      }
+
       // Modal buttons
       document.getElementById("btn-close-inspect").addEventListener("click", () => {
         this.closeWeaponModal();
@@ -3236,15 +3294,15 @@
             this.selectedShopWeapon = null;
             this.updateShopCards();
           } else {
-            // Already has tower, switch to inspecting
+            // Already has tower, switch to quick management
             this.selectedShopWeapon = null;
             this.updateShopCards();
-            this.inspectTower(clickedSlot.tower);
+            this.openTowerQuickMenu(clickedSlot.tower);
           }
         } else {
-          // Inspect existing tower or prompt
+          // Inspect existing tower: open floating quick action bar directly on canvas
           if (clickedSlot.tower) {
-            this.inspectTower(clickedSlot.tower);
+            this.openTowerQuickMenu(clickedSlot.tower);
           }
         }
       } else {
@@ -3253,6 +3311,9 @@
           // Cancel placement mode
           this.selectedShopWeapon = null;
           this.updateShopCards();
+        }
+        if (this.selectedTower) {
+          this.closeTowerQuickMenu();
         }
         if (this.inspectingTower) {
           this.closeWeaponModal();
@@ -3295,6 +3356,126 @@
       this.sound.play("build");
       this.createExplosion(slot.x, slot.y, "#f1c40f", 25);
       this.createFloatingText(`-${template.cost} 🪙`, slot.x, slot.y - 30, "#e74c3c");
+      this.updateHUD();
+    }
+
+    // --- FLOATING TOWER QUICK MANAGEMENT (الترقية والإدارة السريعة فوق الأبراج) ---
+    openTowerQuickMenu(tower) {
+      this.selectedTower = tower;
+      const menu = document.getElementById("tower-quick-menu");
+      if (!menu) return;
+
+      const isAr = this.lang === "ar";
+      const dict = I18N[this.lang];
+
+      document.getElementById("quick-tower-icon").textContent = tower.icon;
+      document.getElementById("quick-tower-name").textContent = dict[tower.nameKey] || tower.id;
+      document.getElementById("quick-tower-level").textContent = `${isAr ? "المستوى " : "Lv."}${tower.level}`;
+
+      // Next upgrade status
+      const upBtn = document.getElementById("btn-quick-upgrade");
+      const costEl = document.getElementById("quick-upgrade-cost");
+      const nextUp = tower.upgrades && tower.upgrades[tower.level - 1];
+
+      if (nextUp) {
+        upBtn.classList.remove("max-level");
+        costEl.textContent = `${nextUp.cost} 🪙`;
+
+        if (this.gold < nextUp.cost) {
+          upBtn.classList.add("locked");
+          upBtn.disabled = true;
+          upBtn.title = isAr ? "ذهب غير كافٍ للترقية" : "Not enough gold";
+        } else {
+          upBtn.classList.remove("locked");
+          upBtn.disabled = false;
+          upBtn.title = isAr ? `ترقية السلاح مقابل ${nextUp.cost} ذهب` : `Upgrade tower for ${nextUp.cost} gold`;
+        }
+      } else {
+        // Max level reached
+        upBtn.classList.add("max-level");
+        upBtn.classList.remove("locked");
+        upBtn.disabled = true;
+        costEl.textContent = isAr ? "الحد الأقصى ⭐" : "MAX ⭐";
+        upBtn.title = isAr ? "تم بلوغ أعلى مستوى ترقية" : "Max upgrade level reached";
+      }
+
+      // Sell refund
+      const refund = Math.floor(tower.investedGold * 0.7);
+      document.getElementById("quick-sell-refund").textContent = `+${refund} 🪙`;
+
+      this.positionTowerQuickMenu();
+      menu.classList.remove("hidden");
+      this.sound.play("coin");
+    }
+
+    positionTowerQuickMenu() {
+      if (!this.selectedTower) return;
+      const menu = document.getElementById("tower-quick-menu");
+      if (!menu) return;
+
+      const t = this.selectedTower;
+      // Clamp coordinates to stay completely inside viewport bounds
+      const clampedX = Math.max(115, Math.min(this.width - 115, t.x));
+      const clampedY = Math.max(72, t.y - 34);
+
+      menu.style.left = `${clampedX}px`;
+      menu.style.top = `${clampedY}px`;
+    }
+
+    closeTowerQuickMenu() {
+      this.selectedTower = null;
+      const menu = document.getElementById("tower-quick-menu");
+      if (menu) menu.classList.add("hidden");
+    }
+
+    quickUpgradeTower(tower) {
+      if (!tower) return;
+      const nextUp = tower.upgrades && tower.upgrades[tower.level - 1];
+      if (!nextUp) return;
+
+      if (this.gold < nextUp.cost) {
+        const isAr = this.lang === "ar";
+        this.createFloatingText(isAr ? "ذهب غير كافٍ! 🪙" : "Need more gold! 🪙", tower.x, tower.y - 25, "#e74c3c", 1.15);
+        this.sound.play("hit");
+        return;
+      }
+
+      this.gold -= nextUp.cost;
+      tower.investedGold += nextUp.cost;
+      tower.level += 1;
+      tower.damage = nextUp.damage;
+      tower.range = nextUp.range;
+      if (nextUp.fireRate) tower.fireRate = nextUp.fireRate;
+      if (nextUp.aoe) tower.aoe = nextUp.aoe;
+      if (nextUp.chain) tower.chain = nextUp.chain;
+      if (nextUp.pierce) tower.pierce = nextUp.pierce;
+
+      this.sound.play("build");
+      this.createExplosion(tower.x, tower.y, "#2ecc71", 35);
+      const isAr = this.lang === "ar";
+      this.createFloatingText(`⬆️ ${isAr ? "ترقية!" : "UPGRADED!"} Lv.${tower.level}`, tower.x, tower.y - 34, "#2ecc71", 1.35);
+
+      this.updateHUD();
+
+      // Immediately refresh the floating menu to show updated level & next cost or MAX
+      if (this.selectedTower === tower) {
+        this.openTowerQuickMenu(tower);
+      }
+    }
+
+    quickSellTower(tower) {
+      if (!tower) return;
+      const refund = Math.floor(tower.investedGold * 0.7);
+      this.gold += refund;
+      tower.slot.tower = null;
+      const idx = this.towers.indexOf(tower);
+      if (idx !== -1) {
+        this.towers.splice(idx, 1);
+      }
+
+      this.sound.play("coin");
+      this.createFloatingText(`+${refund} 🪙`, tower.x, tower.y - 20, "#f1c40f", 1.25);
+      this.closeTowerQuickMenu();
       this.updateHUD();
     }
 
