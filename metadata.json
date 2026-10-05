@@ -1,0 +1,6 @@
+{
+  "name": "Castle Defense TD",
+  "description": "لعبة دفاع عن القلعة ملحمية بمساحة عريضة، أنظمة تسليح متقدمة ومدافع على الأسوار، وموجات أعداء متعددة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

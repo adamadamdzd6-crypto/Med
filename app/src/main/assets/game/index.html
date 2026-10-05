@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d1117">
+  <title>دفاع القلعة العظيمة - Castle Defense TD</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top HUD Bar -->
+    <header id="top-hud">
+      <!-- Wave & Battle Info -->
+      <div class="hud-panel wave-panel">
+        <div class="wave-badge">
+          <span class="hud-label" data-i18n="wave">الموجة</span>
+          <span id="wave-number" class="hud-value highlight">1</span>
+          <span class="wave-total">/ 25</span>
+        </div>
+        <div class="enemy-counter">
+          <span class="icon">👾</span>
+          <span id="enemy-count">0</span>
+        </div>
+        <!-- Dynamic Weather Indicator Badge -->
+        <div class="weather-badge" id="weather-badge" title="الطقس الحالي والتأثيرات التكتيكية">
+          <span id="weather-icon" class="weather-icon">☀️</span>
+          <span id="weather-name" class="weather-name">صافٍ</span>
+          <span id="weather-mod-badge" class="weather-mod-tag">عادي</span>
+        </div>
+        <div class="wave-progress-bar-container">
+          <div id="wave-progress-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Castle Main Health -->
+      <div class="hud-panel castle-health-panel state-safe" id="castle-health-panel">
+        <div class="castle-header">
+          <div class="castle-title-wrap">
+            <span class="castle-shield-icon" id="castle-shield-icon-container">
+              <svg id="castle-shield-svg" class="castle-svg-icon fortress-shield-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Outer Fortress Shield -->
+                <path class="svg-shield-outline" d="M12 2.5L4 5.8v6c0 5.4 3.4 9.8 8 11.2 4.6-1.4 8-5.8 8-11.2v-6L12 2.5z" fill="currentColor" fill-opacity="0.18" />
+                <!-- Castle Battlements (Crenellations) -->
+                <path class="svg-crenellations" d="M7.5 8.5V6.8h1.8v1.7h1.8V6.8h1.8v1.7h1.8V6.8h1.8v1.7" />
+                <!-- Fortress Center Gateway with Portcullis Arch -->
+                <path class="svg-gate" d="M10 17v-3.5a2 2 0 0 1 4 0V17" />
+                <line class="svg-gate-bar" x1="10" y1="15" x2="14" y2="15" />
+                <!-- Castle Wall Masonry Line -->
+                <line class="svg-wall-line" x1="6.5" y1="10.8" x2="17.5" y2="10.8" />
+              </svg>
+            </span>
+            <span class="castle-name" data-i18n="castleName">قلعة المجد العريضة</span>
+          </div>
+          <div class="castle-hp-info">
+            <svg id="castle-vitality-svg" class="castle-svg-icon vitality-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              <path class="pulse-line" d="M7 11h2.5l1.5-3 2 6 1.5-3H17" fill="none" stroke="#0e141d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span id="castle-hp-text" class="castle-hp-text">2500 / 2500</span>
+          </div>
+        </div>
+        <div class="health-bar-wrapper">
+          <div id="castle-health-fill" style="width: 100%;"></div>
+          <div id="castle-health-glow"></div>
+        </div>
+      </div>
+
+      <!-- Resources & Controls -->
+      <div class="hud-panel resources-panel">
+        <div class="res-item gold-item">
+          <span class="res-icon">🪙</span>
+          <span id="gold-value" class="res-value">450</span>
+        </div>
+        <div class="res-item mana-item">
+          <span class="res-icon">🔮</span>
+          <span id="mana-value" class="res-value">100</span>
+        </div>
+        <div class="res-item score-item">
+          <span class="res-icon">⭐</span>
+          <span id="score-value" class="res-value">0</span>
+        </div>
+
+        <div class="control-buttons">
+          <button id="btn-speed" class="hud-btn" title="السرعة">1x</button>
+          <button id="btn-sound" class="hud-btn" title="الصوت">🔊</button>
+          <button id="btn-weather" class="hud-btn highlight-weather-btn" title="نظام الطقس" data-i18n-title="weatherTitle">🌦️</button>
+          <button id="btn-bestiary" class="hud-btn highlight-bestiary-btn" title="موسوعة الأعداء" data-i18n-title="bestiaryTitle">📖</button>
+          <button id="btn-achievements" class="hud-btn highlight-achievements-btn" title="سجل الإنجازات" data-i18n-title="achievementsTitle">🏆</button>
+          <button id="btn-settings" class="hud-btn highlight-settings-btn" title="إعدادات الصوتيات">⚙️</button>
+          <button id="btn-lang" class="hud-btn" title="اللغة">AR</button>
+          <button id="btn-files" class="hud-btn highlight-btn" title="استعراض الأكواد">📁</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Castle Spells & Tactical Abilities (Right Edge) -->
+    <div id="spells-bar">
+      <div class="spell-btn" id="spell-repair" data-cost="75" data-type="gold" title="إصلاح السور">
+        <span class="spell-icon">🔨</span>
+        <span class="spell-cost">75 🪙</span>
+        <span class="spell-name" data-i18n="repair">إصلاح</span>
+        <div class="spell-cooldown" id="cd-repair"></div>
+      </div>
+      <div class="spell-btn" id="spell-meteor" data-cost="40" data-type="mana" title="وابل النيازك">
+        <span class="spell-icon">☄️</span>
+        <span class="spell-cost">40 🔮</span>
+        <span class="spell-name" data-i18n="meteor">شهب</span>
+        <div class="spell-cooldown" id="cd-meteor"></div>
+      </div>
+      <div class="spell-btn" id="spell-blizzard" data-cost="50" data-type="mana" title="عاصفة صقيع">
+        <span class="spell-icon">❄️</span>
+        <span class="spell-cost">50 🔮</span>
+        <span class="spell-name" data-i18n="freeze">صقيع</span>
+        <div class="spell-cooldown" id="cd-blizzard"></div>
+      </div>
+    </div>
+
+    <!-- Active Wave Banner / Auto-start notification -->
+    <div id="wave-banner">
+      <button id="btn-start-wave" class="banner-btn">
+        <span class="banner-pulse"></span>
+        <span class="banner-text" data-i18n="startWave">ابدأ الموجة القادمة ⚔️</span>
+      </button>
+    </div>
+
+    <!-- Dynamic Weather Change Alert Banner -->
+    <div id="weather-alert-banner" class="weather-alert-banner hidden">
+      <span class="weather-alert-icon" id="weather-alert-icon">🌧️</span>
+      <div class="weather-alert-content">
+        <span class="weather-alert-title" id="weather-alert-title">عاصفة رعدية ممطرة</span>
+        <span class="weather-alert-desc" id="weather-alert-desc">الأرض المبتلة تبطئ الأعداء (+25% لصواعق تسلا)</span>
+      </div>
+    </div>
+
+    <!-- Boss Battle Active HUD Panel -->
+    <div id="boss-hud" class="boss-hud hidden">
+      <div class="boss-hud-inner">
+        <div class="boss-avatar-box" id="boss-hud-avatar">👑</div>
+        <div class="boss-hud-details">
+          <div class="boss-hud-meta">
+            <span class="boss-badge-tag" data-i18n="bossAlertTag">زعيم الموجة</span>
+            <span class="boss-hud-name" id="boss-hud-name">زعيم معركة القلعة</span>
+            <span class="boss-phase-badge" id="boss-phase-badge">Phase 1</span>
+          </div>
+          <div class="boss-hp-track">
+            <div class="boss-hp-lag" id="boss-hp-lag"></div>
+            <div class="boss-hp-bar" id="boss-hp-bar" style="width: 100%;"></div>
+            <span class="boss-hp-val" id="boss-hp-val">100%</span>
+          </div>
+          <div class="boss-tactic-tip" id="boss-tactic-tip">
+            <span class="tip-icon">💡</span>
+            <span class="tip-text" id="boss-tip-text">استخدم مدافع الحصار والباليستا لاختراق دروعه!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Epic Boss Wave Incoming Alert Banner -->
+    <div id="boss-warning-overlay" class="boss-warning-overlay hidden">
+      <div class="boss-warning-box">
+        <div class="boss-warning-flame-glow"></div>
+        <div class="boss-warning-icon-wrap">
+          <span class="boss-warn-icon-left">⚔️</span>
+          <span class="boss-warn-avatar" id="boss-warn-avatar">🔥</span>
+          <span class="boss-warn-icon-right">⚠️</span>
+        </div>
+        <div class="boss-warning-sub" data-i18n="bossIncomingSub">إنذار طوارئ الحرب: اقتراب زعيم الغزاة!</div>
+        <h2 class="boss-warning-title" id="boss-warn-title">قائد الجحيم الناري</h2>
+        <p class="boss-warning-desc" id="boss-warn-desc">زعيم فائق السرعة والصحة يشن هجوماً ساحقاً على القلعة!</p>
+        <div class="boss-combo-advice">
+          <span class="combo-label" data-i18n="bossRecommendedTowers">الأسلحة الموصى بها لهزيمته:</span>
+          <div class="combo-tags" id="boss-combo-tags">
+            <span class="combo-pill">🎯 باليستا خارقة</span>
+            <span class="combo-pill">💣 مدفع الحصار</span>
+            <span class="combo-pill">❄️ تعويذة الصقيع</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Weapon Shop Bar -->
+    <footer id="bottom-shop">
+      <div class="shop-title-area">
+        <span class="shop-badge" data-i18n="shopTitle">ترسانة الدفاع</span>
+        <span class="shop-hint" data-i18n="shopHint">اختر سلاحاً ثم اضغط فوق أبراج وأسوار القلعة</span>
+      </div>
+
+      <div class="shop-cards-scroll">
+        <!-- Archer Card -->
+        <div class="weapon-card" data-weapon="archer" data-cost="100">
+          <div class="weapon-icon-box">🏹</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnArcher">رماة السهام</span>
+            <span class="weapon-stat" data-i18n="wpnArcherDesc">سريع • مهدئ</span>
+          </div>
+          <div class="weapon-price">100 🪙</div>
+        </div>
+
+        <!-- Cannon Card -->
+        <div class="weapon-card" data-weapon="cannon" data-cost="175">
+          <div class="weapon-icon-box">💣</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnCannon">مدفع الحصار</span>
+            <span class="weapon-stat" data-i18n="wpnCannonDesc">انفجار • ضرر جماعي</span>
+          </div>
+          <div class="weapon-price">175 🪙</div>
+        </div>
+
+        <!-- Ballista Card -->
+        <div class="weapon-card" data-weapon="ballista" data-cost="225">
+          <div class="weapon-icon-box">🎯</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnBallista">قاذف الباليستا</span>
+            <span class="weapon-stat" data-i18n="wpnBallistaDesc">مدى بعيد • خارق للدروع</span>
+          </div>
+          <div class="weapon-price">225 🪙</div>
+        </div>
+
+        <!-- Flamethrower Card -->
+        <div class="weapon-card" data-weapon="flamethrower" data-cost="250">
+          <div class="weapon-icon-box">🔥</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnFlame">قاذف النيران</span>
+            <span class="weapon-stat" data-i18n="wpnFlameDesc">حرق مستمر • يبطئ</span>
+          </div>
+          <div class="weapon-price">250 🪙</div>
+        </div>
+
+        <!-- Tesla Lightning Card -->
+        <div class="weapon-card" data-weapon="tesla" data-cost="300">
+          <div class="weapon-icon-box">⚡</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnTesla">برج الصواعق</span>
+            <span class="weapon-stat" data-i18n="wpnTeslaDesc">صاعقة متشعبة • صدمة</span>
+          </div>
+          <div class="weapon-price">300 🪙</div>
+        </div>
+
+        <!-- Catapult Mortar Card -->
+        <div class="weapon-card" data-weapon="catapult" data-cost="350">
+          <div class="weapon-icon-box">☄️</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="wpnCatapult">المنجنيق الصخري</span>
+            <span class="weapon-stat" data-i18n="wpnCatapultDesc">صخور عملاقة • سحق</span>
+          </div>
+          <div class="weapon-price">350 🪙</div>
+        </div>
+      </div>
+
+      <!-- Cancel Selection Button (Shown when a weapon is chosen) -->
+      <button id="btn-cancel-placement" class="cancel-btn hidden">
+        <span data-i18n="cancel">إلغاء التحديد ✕</span>
+      </button>
+    </footer>
+
+    <!-- Weapon Upgrade & Management Popup -->
+    <div id="weapon-modal" class="game-modal-overlay hidden">
+      <div class="modal-card weapon-inspect-card">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span id="inspect-icon" class="big-icon">🏹</span>
+            <div>
+              <h3 id="inspect-name">رماة السهام</h3>
+              <span id="inspect-level" class="badge">المستوى 1</span>
+            </div>
+          </div>
+          <button id="btn-close-inspect" class="close-x">✕</button>
+        </div>
+
+        <div class="inspect-stats-grid">
+          <div class="stat-box">
+            <span class="stat-lbl" data-i18n="damage">الضرر</span>
+            <span id="inspect-damage" class="stat-val">25</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-lbl" data-i18n="fireRate">سرعة الرمي</span>
+            <span id="inspect-speed" class="stat-val">1.2/ث</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-lbl" data-i18n="range">المدى</span>
+            <span id="inspect-range" class="stat-val">180</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-lbl" data-i18n="kills">الأعداء المقضي عليهم</span>
+            <span id="inspect-kills" class="stat-val">0</span>
+          </div>
+        </div>
+
+        <div class="targeting-section">
+          <span class="section-label" data-i18n="targetPriority">أولوية الاستهداف:</span>
+          <div class="priority-pills">
+            <button class="pill-btn active" data-priority="first" data-i18n="targetFirst">الأول</button>
+            <button class="pill-btn" data-priority="closest" data-i18n="targetClosest">الأقرب</button>
+            <button class="pill-btn" data-priority="strongest" data-i18n="targetStrongest">الأقوى</button>
+            <button class="pill-btn" data-priority="weakest" data-i18n="targetWeakest">الأضعف</button>
+          </div>
+        </div>
+
+        <div class="modal-actions-row">
+          <button id="btn-upgrade-weapon" class="action-btn upgrade-btn">
+            <span class="action-icon">⬆️</span>
+            <span id="upgrade-btn-text" data-i18n="upgrade">ترقية</span>
+            <span id="upgrade-cost" class="cost-tag">120 🪙</span>
+          </button>
+          <button id="btn-sell-weapon" class="action-btn sell-btn">
+            <span class="action-icon">💰</span>
+            <span data-i18n="sell">بيع السلاح</span>
+            <span id="sell-refund" class="refund-tag">+70 🪙</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory / Defeat Modal -->
+    <div id="end-modal" class="game-modal-overlay hidden">
+      <div class="modal-card end-card">
+        <div id="end-header-icon" class="big-status-icon">🏆</div>
+        <h2 id="end-title">تم دحر الغزاة بنجاح!</h2>
+        <p id="end-subtitle">صمدت قلعتك العريضة أمام أمواج الأعداء العاتية</p>
+        
+        <div class="end-stats-container">
+          <div class="end-stat-row">
+            <span data-i18n="finalWave">الموجة المكتملة:</span>
+            <strong id="end-final-wave">25</strong>
+          </div>
+          <div class="end-stat-row">
+            <span data-i18n="finalScore">النتيجة النهائية:</span>
+            <strong id="end-final-score">14,250</strong>
+          </div>
+          <div class="end-stat-row">
+            <span data-i18n="enemiesDefeated">إجمالي الأعداء:</span>
+            <strong id="end-final-enemies">180</strong>
+          </div>
+        </div>
+
+        <div class="end-btn-row">
+          <button id="btn-restart-game" class="primary-btn pulse-glow" data-i18n="playAgain">معركة جديدة ⚔️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code & Separated Files Modal (For user inspecting/extracting HTML, CSS, JS) -->
+    <div id="files-modal" class="game-modal-overlay hidden">
+      <div class="modal-card files-card">
+        <div class="modal-header">
+          <div>
+            <h3 data-i18n="filesTitle">ملفات المشروع المنفصلة (HTML / CSS / JS)</h3>
+            <p class="subtitle" data-i18n="filesSubtitle">جاهزة للحزم في APK أو التصدير لأي محاكي (Zalith Launcher / Cordova / Web)</p>
+          </div>
+          <button id="btn-close-files" class="close-x">✕</button>
+        </div>
+
+        <div class="files-tabs">
+          <button class="file-tab active" data-file="html">index.html</button>
+          <button class="file-tab" data-file="css">style.css</button>
+          <button class="file-tab" data-file="js">game.js</button>
+        </div>
+
+        <div class="code-view-container">
+          <div class="code-view-toolbar">
+            <span id="current-filename">index.html</span>
+            <div class="code-toolbar-actions">
+              <button id="btn-copy-code" class="copy-btn">📋 نسخ الملف</button>
+              <button id="btn-download-code" class="download-code-btn">💾 حفظ كملف</button>
+            </div>
+          </div>
+          <pre id="code-display"><code id="code-content"></code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio & Game Settings Modal -->
+    <div id="settings-modal" class="game-modal-overlay hidden">
+      <div class="modal-card settings-card">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="big-icon">⚙️</span>
+            <div>
+              <h3 data-i18n="settingsTitle">إعدادات الصوتيات واللعبة</h3>
+              <p class="subtitle" data-i18n="settingsSubtitle">التحكم بالموسيقى الملحمية ومؤثرات الأبراج والأعداء</p>
+            </div>
+          </div>
+          <button id="btn-close-settings" class="close-x">✕</button>
+        </div>
+
+        <div class="settings-content">
+          <!-- Master Volume Section -->
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <span class="group-title" data-i18n="masterAudio">🔊 الصوت العام (Master)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-master-sound" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="slider-row">
+              <span class="slider-icon">🔈</span>
+              <input type="range" id="slider-master-volume" min="0" max="100" value="80" class="custom-slider">
+              <span class="slider-val" id="val-master-volume">80%</span>
+            </div>
+          </div>
+
+          <!-- Epic Background Music Section -->
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <div class="title-with-badge">
+                <span class="group-title" data-i18n="bgmTitle">🎵 الموسيقى الملحمية (Epic BGM)</span>
+                <span class="music-track-badge" data-i18n="bgmTrack">سيمفونية القلعة ⚔️</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-bgm" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="slider-row">
+              <span class="slider-icon">🎻</span>
+              <input type="range" id="slider-bgm-volume" min="0" max="100" value="65" class="custom-slider">
+              <span class="slider-val" id="val-bgm-volume">65%</span>
+            </div>
+            <div class="music-controls-row">
+              <button id="btn-play-music" class="music-action-btn" data-i18n="playMusic">▶️ تشغيل الموسيقى</button>
+              <button id="btn-stop-music" class="music-action-btn" data-i18n="stopMusic">⏹️ إيقاف</button>
+            </div>
+          </div>
+
+          <!-- Sound Effects (SFX) Section -->
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <span class="group-title" data-i18n="sfxTitle">💥 المؤثرات الصوتية (SFX)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-sfx" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="slider-row">
+              <span class="slider-icon">🔉</span>
+              <input type="range" id="slider-sfx-volume" min="0" max="100" value="80" class="custom-slider">
+              <span class="slider-val" id="val-sfx-volume">80%</span>
+            </div>
+
+            <!-- Granular Toggles for Towers and Enemies -->
+            <div class="granular-toggles-grid">
+              <div class="granular-toggle-item">
+                <div class="toggle-label-wrap">
+                  <span class="toggle-icon">🏹</span>
+                  <div>
+                    <strong class="toggle-name" data-i18n="towerSfx">مؤثرات الأبراج والأسلحة</strong>
+                    <p class="toggle-desc" data-i18n="towerSfxDesc">سهام، قذائف مدافع، صواعق، نيران</p>
+                  </div>
+                </div>
+                <label class="toggle-switch small-switch">
+                  <input type="checkbox" id="toggle-tower-sfx" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="granular-toggle-item">
+                <div class="toggle-label-wrap">
+                  <span class="toggle-icon">👾</span>
+                  <div>
+                    <strong class="toggle-name" data-i18n="enemySfx">مؤثرات الأعداء والقلعة</strong>
+                    <p class="toggle-desc" data-i18n="enemySfxDesc">ضربات السور، دروع الفرسان، خطى العمالقة</p>
+                  </div>
+                </div>
+                <label class="toggle-switch small-switch">
+                  <input type="checkbox" id="toggle-enemy-sfx" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Sound Test Row -->
+            <div class="sound-test-row">
+              <span class="test-label" data-i18n="testSfx">تجربة المؤثرات:</span>
+              <div class="test-buttons-wrap">
+                <button class="test-sfx-btn" data-sound="cannon" data-i18n="testCannon">💣 مدفع</button>
+                <button class="test-sfx-btn" data-sound="arrow" data-i18n="testArrow">🏹 سهم</button>
+                <button class="test-sfx-btn" data-sound="tesla" data-i18n="testTesla">⚡ صاعقة</button>
+                <button class="test-sfx-btn" data-sound="hit" data-i18n="testHit">🛡️ ضربة سور</button>
+                <button class="test-sfx-btn" data-sound="horn" data-i18n="testHorn">📯 بوق معركة</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-footer">
+          <button id="btn-reset-audio" class="reset-settings-btn" data-i18n="resetAudio">إعادة الضبط الافتراضي 🔄</button>
+          <button id="btn-save-settings" class="primary-btn save-settings-btn" data-i18n="saveClose">حفظ وإغلاق ✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enemy Bestiary & Tactical Guide Modal (موسوعة الأعداء) -->
+    <div id="bestiary-modal" class="game-modal-overlay hidden">
+      <div class="modal-card bestiary-card">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="big-icon bestiary-pulse-icon">📖</span>
+            <div>
+              <h3 data-i18n="bestiaryTitle">موسوعة الأعداء والدليل التكتيكي</h3>
+              <p class="subtitle" data-i18n="bestiarySubtitle">معلومات شاملة عن نقاط قوة وضعف كافة الغزاة وتشكيلات الأسلحة المضادة لهم</p>
+            </div>
+          </div>
+          <button id="btn-close-bestiary" class="close-x">✕</button>
+        </div>
+
+        <!-- Filter Tabs & Search Bar -->
+        <div class="bestiary-controls">
+          <div class="bestiary-tabs">
+            <button class="bestiary-tab active" data-filter="all" data-i18n="bestiaryTabAll">الكل 📋</button>
+            <button class="bestiary-tab" data-filter="boss" data-i18n="bestiaryTabBoss">الزعماء 👑</button>
+            <button class="bestiary-tab" data-filter="armored" data-i18n="bestiaryTabArmored">مدرع 🛡️</button>
+            <button class="bestiary-tab" data-filter="fast" data-i18n="bestiaryTabFast">سريع ⚡</button>
+            <button class="bestiary-tab" data-filter="flying" data-i18n="bestiaryTabFlying">طائر 🐉</button>
+            <button class="bestiary-tab" data-filter="massive" data-i18n="bestiaryTabMassive">عمالقة 🗿</button>
+            <button class="bestiary-tab" data-filter="standard" data-i18n="bestiaryTabStandard">مشاة 👺</button>
+          </div>
+          <div class="bestiary-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="bestiary-search" placeholder="بحث عن عدو أو زعيم..." data-i18n-placeholder="bestiarySearchPlaceholder" class="bestiary-search-input">
+          </div>
+        </div>
+
+        <!-- Bestiary Cards Grid Container -->
+        <div class="bestiary-content-scroll" id="bestiary-cards-grid">
+          <!-- Dynamically populated by CastleTDGame.renderBestiaryList() -->
+        </div>
+
+        <div class="bestiary-footer">
+          <div class="bestiary-stats-summary" id="bestiary-counter-text">
+            <span>عرض 15/15 نوع عدو مسجل في سجلات الحصن</span>
+          </div>
+          <button id="btn-dismiss-bestiary" class="primary-btn save-settings-btn" data-i18n="saveClose">إغلاق الدليل ✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Unlocked In-Game Small Toast Notifications -->
+    <div id="achievement-toast-container"></div>
+
+    <!-- Achievements & Trophies Modal (سجل الإنجازات) -->
+    <div id="achievements-modal" class="game-modal-overlay hidden">
+      <div class="modal-card achievements-card">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="big-icon achievements-icon-glow">🏆</span>
+            <div>
+              <h3 data-i18n="achievementsHeader">سجل الإنجازات والبطولات الحربية</h3>
+              <p class="subtitle" data-i18n="achievementsSub">حقق الأهداف لكسب الجوائز الذهبية والأوسمة الإمبراطورية</p>
+            </div>
+          </div>
+          <button id="btn-close-achievements" class="close-x">✕</button>
+        </div>
+
+        <!-- Summary Progress Bar -->
+        <div class="achievements-summary-panel">
+          <div class="achievements-summary-info">
+            <span id="achievements-progress-label">الإنجازات المكتملة: 0 / 12 (0%)</span>
+            <span id="achievements-unlocked-gold">مجموع الجوائز: +0 🪙</span>
+          </div>
+          <div class="achievements-track">
+            <div id="achievements-total-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Scrollable List of Achievements -->
+        <div class="achievements-list-scroll" id="achievements-list">
+          <!-- Dynamically populated by CastleTDGame.renderAchievementsList() -->
+        </div>
+
+        <div class="achievements-footer">
+          <button id="btn-dismiss-achievements" class="primary-btn save-settings-btn" data-i18n="saveClose">إغلاق السجل ✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tactical Weather System Modal -->
+    <div id="weather-modal" class="game-modal-overlay hidden">
+      <div class="modal-card weather-card">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="big-icon" id="weather-modal-header-icon">🌦️</span>
+            <div>
+              <h3 data-i18n="weatherTitle">نظام الطقس والمناخ التكتيكي</h3>
+              <p class="subtitle" data-i18n="weatherSubtitle">المناخ يؤثر حركياً على سرعة الأعداء وقوة الأبراج</p>
+            </div>
+          </div>
+          <button id="btn-close-weather" class="close-x">✕</button>
+        </div>
+
+        <div class="weather-modal-body">
+          <!-- Hero Banner for Current Active Weather -->
+          <div class="current-weather-hero" id="current-weather-hero">
+            <!-- Dynamically populated -->
+          </div>
+
+          <h4 class="weather-section-title" data-i18n="weatherManualSelect">موسوعة أنماط الطقس والتبديل اليدوي</h4>
+          <div class="weather-types-grid" id="weather-types-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="weather-modal-footer">
+          <button id="btn-dismiss-weather" class="primary-btn save-settings-btn" data-i18n="saveClose">إغلاق ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
