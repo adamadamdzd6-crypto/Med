@@ -527,6 +527,70 @@
             });
             break;
           }
+          case "guard_horn": {
+            const notes = [329.63, 440.0, 554.37, 659.25];
+            notes.forEach((freq, idx) => {
+              const startT = t + idx * 0.09;
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = "sawtooth";
+              osc.frequency.setValueAtTime(freq, startT);
+              gain.gain.setValueAtTime(0.32, startT);
+              gain.gain.exponentialRampToValueAtTime(0.01, startT + 0.32);
+              osc.connect(gain);
+              gain.connect(this.sfxGain);
+              osc.start(startT);
+              osc.stop(startT + 0.33);
+            });
+            break;
+          }
+          case "guard_block": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(1200, t);
+            osc.frequency.exponentialRampToValueAtTime(320, t + 0.18);
+            gain.gain.setValueAtTime(0.45, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.18);
+            break;
+          }
+          case "sword_clash": {
+            // Metallic blade clashing in melee combat
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(1600 + Math.random() * 400, t);
+            osc.frequency.exponentialRampToValueAtTime(280, t + 0.12);
+            gain.gain.setValueAtTime(0.28, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.12);
+            break;
+          }
+          case "troop_recruit": {
+            // Noble brass fanfare for new soldier entering the field
+            const notes = [440.0, 554.37, 659.25];
+            notes.forEach((freq, idx) => {
+              const startT = t + idx * 0.07;
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = "triangle";
+              osc.frequency.setValueAtTime(freq, startT);
+              gain.gain.setValueAtTime(0.26, startT);
+              gain.gain.exponentialRampToValueAtTime(0.01, startT + 0.22);
+              osc.connect(gain);
+              gain.connect(this.sfxGain);
+              osc.start(startT);
+              osc.stop(startT + 0.23);
+            });
+            break;
+          }
         }
       } catch (e) {
         // audio context safety
@@ -657,10 +721,25 @@
       castleName: "قلعة المجد العريضة",
       repair: "إصلاح",
       meteor: "شهب",
+      guardCall: "نداء الحرس",
       freeze: "صقيع",
       startWave: "ابدأ الموجة القادمة ⚔️",
       shopTitle: "ترسانة الدفاع",
       shopHint: "اختر سلاحاً ثم اضغط فوق أسوار وأبراج القلعة العريضة",
+      tabTowers: "أبراج القلعة",
+      tabArmy: "جيش الميدان",
+      armyTitle: "فيلق الجيش الملكي",
+      armyHint: "اضغط لتجنيد وإرسال المقاتلين لمواجهة وسحق الغزاة في الطريق",
+      unitSwordsman: "المشاة الملكي",
+      unitSwordsmanDesc: "سيف ودرع • صمود متقدم",
+      unitArcher: "رماة السهام",
+      unitArcherDesc: "رمي عن بعد • قذائف سريعة",
+      unitPaladin: "الفارس الثقيل",
+      unitPaladinDesc: "درع فولاذي • صحة 580",
+      unitCavalier: "فرسان الخيالة",
+      unitCavalierDesc: "صدمة سريعة • هجوم ساحق",
+      unitWarChariot: "منجنيق الميدان",
+      unitWarChariotDesc: "قذائف متفجرة • سحق جماعي",
       cancel: "إلغاء التحديد ✕",
       wpnArcher: "رماة السهام",
       wpnArcherDesc: "سريع • مهدئ",
@@ -781,10 +860,25 @@
       castleName: "Grand Iron Fortress",
       repair: "Repair",
       meteor: "Meteor",
+      guardCall: "Guard Call",
       freeze: "Freeze",
       startWave: "Start Next Wave ⚔️",
       shopTitle: "Defense Arsenal",
       shopHint: "Select weapon then tap castle ramparts and battlements",
+      tabTowers: "Fortress Towers",
+      tabArmy: "Field Army",
+      armyTitle: "Royal Army Corps",
+      armyHint: "Tap to recruit and deploy troops to clash with invaders on the highway",
+      unitSwordsman: "Royal Infantry",
+      unitSwordsmanDesc: "Sword & Shield • Frontline",
+      unitArcher: "Royal Archer",
+      unitArcherDesc: "Ranged Volley • High Speed",
+      unitPaladin: "Heavy Paladin",
+      unitPaladinDesc: "Steel Armor • 580 HP",
+      unitCavalier: "Royal Cavalier",
+      unitCavalierDesc: "Fast Charge • High Impact",
+      unitWarChariot: "War Chariot",
+      unitWarChariotDesc: "Siege Mortar • AoE Blast",
       cancel: "Cancel Selection ✕",
       wpnArcher: "Archer Garrison",
       wpnArcherDesc: "Fast • Rapid Fire",
@@ -1006,69 +1100,122 @@
     }
   };
 
-  // --- MULTIPLE INTERTWINING BATTLEFIELD PATHS ---
-  // Strategic intersecting paths where enemy armies march, cross, and converge
+  // --- GRAND BATTLEFIELD IMPERIAL HIGHWAY LANES ---
+  // A wide, straight, unified military avenue where enemy and friendly armies march and clash head-on
   const BATTLEFIELD_PATHS = [
-    // Path 0: Northern Ridge Flank (ينطلق من الشمال الشرقي، يلتف حول التلال، يعبر تقاطع الطرق الأوسط، ثم يهاجم سور الشمال)
     {
-      id: "north_flank",
-      nameAr: "مسار الشمال الملتوي",
-      nameEn: "Northern Ridge",
+      id: "road_lane_0",
+      nameAr: "مسار الطريق الشمالي",
+      nameEn: "Upper War Highway",
       waypoints: [
-        { rx: 1.05, ry: 0.18 },
-        { rx: 0.84, ry: 0.14 },
-        { rx: 0.68, ry: 0.28 }, // Intersects Path 3
-        { rx: 0.52, ry: 0.40 }, // Central Crossroad intersection
-        { rx: 0.40, ry: 0.22 },
-        { rx: 0.29, ry: 0.20 }  // Castle North Rampart
+        { rx: 0.28, ry: 0.44 }
       ]
     },
-
-    // Path 1: King's Highway / Central S-Curve (الطريق الملكي الأوسط المتعرج، يتجه نحو جسر بوابة الحصن الرئيسية)
     {
-      id: "central_highway",
-      nameAr: "طريق الحصن الأوسط",
-      nameEn: "King's Highway",
+      id: "road_lane_1",
+      nameAr: "قلب الطريق الإمبراطوري",
+      nameEn: "Imperial Highway Center",
       waypoints: [
-        { rx: 1.05, ry: 0.50 },
-        { rx: 0.88, ry: 0.42 },
-        { rx: 0.72, ry: 0.58 }, // Curves south
-        { rx: 0.52, ry: 0.50 }, // Central Crossroad intersection with Path 0 & 3
-        { rx: 0.42, ry: 0.53 },
-        { rx: 0.29, ry: 0.52 }  // Castle Drawbridge & Portcullis
+        { rx: 0.28, ry: 0.48 }
       ]
     },
-
-    // Path 2: Southern Marsh Flank (ينطلق من الجنوب الشرقي، يلتف شمالاً عبر مفترق الطرق، ثم يعود ليهاجم برج الجنوب)
     {
-      id: "south_flank",
-      nameAr: "مسار المستنقع الجنوبي",
-      nameEn: "Southern Marsh",
+      id: "road_lane_2",
+      nameAr: "المسار الأوسط الجنوبي",
+      nameEn: "Central Highway Flank",
       waypoints: [
-        { rx: 1.05, ry: 0.82 },
-        { rx: 0.86, ry: 0.86 },
-        { rx: 0.70, ry: 0.72 },
-        { rx: 0.52, ry: 0.62 }, // Intersection near southern defenses
-        { rx: 0.42, ry: 0.76 },
-        { rx: 0.29, ry: 0.80 }  // Castle South Tower
+        { rx: 0.28, ry: 0.52 }
       ]
     },
-
-    // Path 3: The Weaving Crossway (المسار المتقاطع المتداخل - ينطلق شمالاً ويعبر بشكل قطري قاطعاً المسارات)
     {
-      id: "cross_weave",
-      nameAr: "المعبر المتقاطع المتداخل",
-      nameEn: "Cross-Weave Trail",
+      id: "road_lane_3",
+      nameAr: "مسار الطريق الجنوبي",
+      nameEn: "Lower War Highway",
       waypoints: [
-        { rx: 1.05, ry: 0.34 },
-        { rx: 0.84, ry: 0.40 },
-        { rx: 0.68, ry: 0.28 }, // Intersects Path 0
-        { rx: 0.52, ry: 0.50 }, // Central Crossroad intersection with Path 1
-        { rx: 0.38, ry: 0.66 }, // Intersects Path 2
-        { rx: 0.29, ry: 0.38 }  // Castle Middle Ramparts
+        { rx: 0.28, ry: 0.56 }
       ]
     }
   ];
+
+  // --- ROYAL FIELD ARMY DEFINITIONS (وحدات الجيش الملكي الميداني) ---
+  const ALLIED_UNIT_TYPES = {
+    swordsman: {
+      id: "swordsman",
+      nameAr: "المشاة الملكي",
+      nameEn: "Royal Infantry",
+      icon: "⚔️",
+      cost: 35,
+      hp: 280,
+      damage: 28,
+      speed: 68,
+      range: 34,
+      attackInterval: 0.8,
+      radius: 14,
+      isRanged: false,
+      color: "#3498db"
+    },
+    archer: {
+      id: "archer",
+      nameAr: "رماة السهام الإمبراطوري",
+      nameEn: "Royal Archer",
+      icon: "🏹",
+      cost: 50,
+      hp: 160,
+      damage: 24,
+      speed: 55,
+      range: 190,
+      attackInterval: 0.9,
+      radius: 13,
+      isRanged: true,
+      color: "#2ecc71"
+    },
+    paladin: {
+      id: "paladin",
+      nameAr: "الفارس الثقيل",
+      nameEn: "Heavy Paladin",
+      icon: "🛡️",
+      cost: 75,
+      hp: 580,
+      damage: 45,
+      speed: 46,
+      range: 36,
+      attackInterval: 0.95,
+      radius: 17,
+      isRanged: false,
+      color: "#f1c40f"
+    },
+    cavalier: {
+      id: "cavalier",
+      nameAr: "فرسان الخيالة",
+      nameEn: "Royal Cavalier",
+      icon: "🐎",
+      cost: 95,
+      hp: 420,
+      damage: 65,
+      speed: 110,
+      range: 38,
+      attackInterval: 0.75,
+      radius: 18,
+      isRanged: false,
+      color: "#9b59b6"
+    },
+    war_chariot: {
+      id: "war_chariot",
+      nameAr: "منجنيق الميدان الملكي",
+      nameEn: "War Machine Chariot",
+      icon: "⚙️",
+      cost: 130,
+      hp: 480,
+      damage: 75,
+      speed: 40,
+      range: 220,
+      attackInterval: 1.4,
+      radius: 20,
+      isRanged: true,
+      aoe: 70,
+      color: "#e67e22"
+    }
+  };
 
   // --- CASTLE WEAPON SLOT LAYOUT (Relative to canvas dimensions) ---
   // Strategically distributed on the massive fortress ramparts and towers
@@ -1969,13 +2116,21 @@
       // Selection & Placement
       this.selectedShopWeapon = null;
       this.inspectingTower = null;
-      this.selectedTower = null;
       this.hoveredSlot = null;
+      this.currentShopTab = "towers";
+
+      // Royal Field Army state (فيلق الجيش الملكي الميداني)
+      this.allies = [];
+
+      // Royal Guards active state (نداء الحرس)
+      this.guards = [];
+      this.spellsCastCount = 0;
 
       // Spell cooldown timers
       this.spellCooldowns = {
         repair: 0,
         meteor: 0,
+        guard: 0,
         blizzard: 0
       };
 
@@ -2053,7 +2208,6 @@
           slot.tower.y = slot.y;
         }
       });
-      this.positionTowerQuickMenu();
     }
 
     // --- USER INTERFACE & BINDINGS ---
@@ -2759,19 +2913,18 @@
         }
       });
 
-      // Floating Tower Quick Menu affordability sync
-      if (this.selectedTower) {
-        const nextUp = this.selectedTower.upgrades && this.selectedTower.upgrades[this.selectedTower.level - 1];
-        const upBtn = document.getElementById("btn-quick-upgrade");
-        if (upBtn && nextUp) {
-          if (this.gold < nextUp.cost) {
-            upBtn.classList.add("locked");
-            upBtn.disabled = true;
-          } else {
-            upBtn.classList.remove("locked");
-            upBtn.disabled = false;
-          }
+      document.querySelectorAll(".army-card").forEach(card => {
+        const cost = parseInt(card.getAttribute("data-cost"), 10);
+        if (this.gold < cost) {
+          card.classList.add("disabled");
+        } else {
+          card.classList.remove("disabled");
         }
+      });
+
+      const armyLiveBadge = document.getElementById("army-live-badge");
+      if (armyLiveBadge) {
+        armyLiveBadge.textContent = this.allies ? this.allies.length : 0;
       }
 
       // Spells status
@@ -2795,6 +2948,25 @@
       } else {
         blizzardBtn.classList.remove("disabled");
       }
+
+      const guardBtn = document.getElementById("spell-guard");
+      if (guardBtn) {
+        if (this.mana < 45 || this.spellCooldowns.guard > 0) {
+          guardBtn.classList.add("disabled");
+        } else {
+          guardBtn.classList.remove("disabled");
+        }
+      }
+
+      // Dynamic cooldown indicator overlays
+      const cdRepair = document.getElementById("cd-repair");
+      if (cdRepair) cdRepair.style.height = this.spellCooldowns.repair > 0 ? `${(this.spellCooldowns.repair / 15) * 100}%` : "0%";
+      const cdMeteor = document.getElementById("cd-meteor");
+      if (cdMeteor) cdMeteor.style.height = this.spellCooldowns.meteor > 0 ? `${(this.spellCooldowns.meteor / 20) * 100}%` : "0%";
+      const cdGuard = document.getElementById("cd-guard");
+      if (cdGuard) cdGuard.style.height = this.spellCooldowns.guard > 0 ? `${(this.spellCooldowns.guard / 24) * 100}%` : "0%";
+      const cdBlizzard = document.getElementById("cd-blizzard");
+      if (cdBlizzard) cdBlizzard.style.height = this.spellCooldowns.blizzard > 0 ? `${(this.spellCooldowns.blizzard / 25) * 100}%` : "0%";
     }
 
     updateShopCards() {
@@ -3085,6 +3257,7 @@
           this.gold -= 75;
           this.castleHp = Math.min(this.castleMaxHp, this.castleHp + 450);
           this.spellCooldowns.repair = 15; // 15 sec cooldown
+          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
           this.sound.play("spell");
           this.createRepairFX();
           this.updateHUD();
@@ -3095,16 +3268,30 @@
         if (this.mana >= 40 && this.spellCooldowns.meteor <= 0) {
           this.mana -= 40;
           this.spellCooldowns.meteor = 20;
+          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
           this.sound.play("spell");
           this.castMeteorShower();
           this.updateHUD();
         }
       });
 
+      const guardBtnEl = document.getElementById("spell-guard");
+      if (guardBtnEl) {
+        guardBtnEl.addEventListener("click", () => {
+          if (this.mana >= 45 && this.spellCooldowns.guard <= 0) {
+            this.mana -= 45;
+            this.spellCooldowns.guard = 24; // 24 sec cooldown
+            this.castGuardCall();
+            this.updateHUD();
+          }
+        });
+      }
+
       document.getElementById("spell-blizzard").addEventListener("click", () => {
         if (this.mana >= 50 && this.spellCooldowns.blizzard <= 0) {
           this.mana -= 50;
           this.spellCooldowns.blizzard = 25;
+          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
           this.sound.play("spell");
           this.castBlizzard();
           this.updateHUD();
@@ -3118,47 +3305,6 @@
         const py = e.clientY - rect.top;
         this.handlePointerDown(px, py);
       });
-
-      // Floating Tower Quick Menu (on-canvas rapid upgrade, sell, and inspect)
-      const quickUpBtn = document.getElementById("btn-quick-upgrade");
-      if (quickUpBtn) {
-        quickUpBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (this.selectedTower) {
-            this.quickUpgradeTower(this.selectedTower);
-          }
-        });
-      }
-
-      const quickSellBtn = document.getElementById("btn-quick-sell");
-      if (quickSellBtn) {
-        quickSellBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (this.selectedTower) {
-            this.quickSellTower(this.selectedTower);
-          }
-        });
-      }
-
-      const quickDetailsBtn = document.getElementById("btn-quick-details");
-      if (quickDetailsBtn) {
-        quickDetailsBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (this.selectedTower) {
-            const tower = this.selectedTower;
-            this.closeTowerQuickMenu();
-            this.inspectTower(tower);
-          }
-        });
-      }
-
-      const quickCloseBtn = document.getElementById("btn-quick-close");
-      if (quickCloseBtn) {
-        quickCloseBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.closeTowerQuickMenu();
-        });
-      }
 
       // Modal buttons
       document.getElementById("btn-close-inspect").addEventListener("click", () => {
@@ -3294,15 +3440,15 @@
             this.selectedShopWeapon = null;
             this.updateShopCards();
           } else {
-            // Already has tower, switch to quick management
+            // Already has tower, switch to inspecting
             this.selectedShopWeapon = null;
             this.updateShopCards();
-            this.openTowerQuickMenu(clickedSlot.tower);
+            this.inspectTower(clickedSlot.tower);
           }
         } else {
-          // Inspect existing tower: open floating quick action bar directly on canvas
+          // Inspect existing tower or prompt
           if (clickedSlot.tower) {
-            this.openTowerQuickMenu(clickedSlot.tower);
+            this.inspectTower(clickedSlot.tower);
           }
         }
       } else {
@@ -3311,9 +3457,6 @@
           // Cancel placement mode
           this.selectedShopWeapon = null;
           this.updateShopCards();
-        }
-        if (this.selectedTower) {
-          this.closeTowerQuickMenu();
         }
         if (this.inspectingTower) {
           this.closeWeaponModal();
@@ -3356,126 +3499,6 @@
       this.sound.play("build");
       this.createExplosion(slot.x, slot.y, "#f1c40f", 25);
       this.createFloatingText(`-${template.cost} 🪙`, slot.x, slot.y - 30, "#e74c3c");
-      this.updateHUD();
-    }
-
-    // --- FLOATING TOWER QUICK MANAGEMENT (الترقية والإدارة السريعة فوق الأبراج) ---
-    openTowerQuickMenu(tower) {
-      this.selectedTower = tower;
-      const menu = document.getElementById("tower-quick-menu");
-      if (!menu) return;
-
-      const isAr = this.lang === "ar";
-      const dict = I18N[this.lang];
-
-      document.getElementById("quick-tower-icon").textContent = tower.icon;
-      document.getElementById("quick-tower-name").textContent = dict[tower.nameKey] || tower.id;
-      document.getElementById("quick-tower-level").textContent = `${isAr ? "المستوى " : "Lv."}${tower.level}`;
-
-      // Next upgrade status
-      const upBtn = document.getElementById("btn-quick-upgrade");
-      const costEl = document.getElementById("quick-upgrade-cost");
-      const nextUp = tower.upgrades && tower.upgrades[tower.level - 1];
-
-      if (nextUp) {
-        upBtn.classList.remove("max-level");
-        costEl.textContent = `${nextUp.cost} 🪙`;
-
-        if (this.gold < nextUp.cost) {
-          upBtn.classList.add("locked");
-          upBtn.disabled = true;
-          upBtn.title = isAr ? "ذهب غير كافٍ للترقية" : "Not enough gold";
-        } else {
-          upBtn.classList.remove("locked");
-          upBtn.disabled = false;
-          upBtn.title = isAr ? `ترقية السلاح مقابل ${nextUp.cost} ذهب` : `Upgrade tower for ${nextUp.cost} gold`;
-        }
-      } else {
-        // Max level reached
-        upBtn.classList.add("max-level");
-        upBtn.classList.remove("locked");
-        upBtn.disabled = true;
-        costEl.textContent = isAr ? "الحد الأقصى ⭐" : "MAX ⭐";
-        upBtn.title = isAr ? "تم بلوغ أعلى مستوى ترقية" : "Max upgrade level reached";
-      }
-
-      // Sell refund
-      const refund = Math.floor(tower.investedGold * 0.7);
-      document.getElementById("quick-sell-refund").textContent = `+${refund} 🪙`;
-
-      this.positionTowerQuickMenu();
-      menu.classList.remove("hidden");
-      this.sound.play("coin");
-    }
-
-    positionTowerQuickMenu() {
-      if (!this.selectedTower) return;
-      const menu = document.getElementById("tower-quick-menu");
-      if (!menu) return;
-
-      const t = this.selectedTower;
-      // Clamp coordinates to stay completely inside viewport bounds
-      const clampedX = Math.max(115, Math.min(this.width - 115, t.x));
-      const clampedY = Math.max(72, t.y - 34);
-
-      menu.style.left = `${clampedX}px`;
-      menu.style.top = `${clampedY}px`;
-    }
-
-    closeTowerQuickMenu() {
-      this.selectedTower = null;
-      const menu = document.getElementById("tower-quick-menu");
-      if (menu) menu.classList.add("hidden");
-    }
-
-    quickUpgradeTower(tower) {
-      if (!tower) return;
-      const nextUp = tower.upgrades && tower.upgrades[tower.level - 1];
-      if (!nextUp) return;
-
-      if (this.gold < nextUp.cost) {
-        const isAr = this.lang === "ar";
-        this.createFloatingText(isAr ? "ذهب غير كافٍ! 🪙" : "Need more gold! 🪙", tower.x, tower.y - 25, "#e74c3c", 1.15);
-        this.sound.play("hit");
-        return;
-      }
-
-      this.gold -= nextUp.cost;
-      tower.investedGold += nextUp.cost;
-      tower.level += 1;
-      tower.damage = nextUp.damage;
-      tower.range = nextUp.range;
-      if (nextUp.fireRate) tower.fireRate = nextUp.fireRate;
-      if (nextUp.aoe) tower.aoe = nextUp.aoe;
-      if (nextUp.chain) tower.chain = nextUp.chain;
-      if (nextUp.pierce) tower.pierce = nextUp.pierce;
-
-      this.sound.play("build");
-      this.createExplosion(tower.x, tower.y, "#2ecc71", 35);
-      const isAr = this.lang === "ar";
-      this.createFloatingText(`⬆️ ${isAr ? "ترقية!" : "UPGRADED!"} Lv.${tower.level}`, tower.x, tower.y - 34, "#2ecc71", 1.35);
-
-      this.updateHUD();
-
-      // Immediately refresh the floating menu to show updated level & next cost or MAX
-      if (this.selectedTower === tower) {
-        this.openTowerQuickMenu(tower);
-      }
-    }
-
-    quickSellTower(tower) {
-      if (!tower) return;
-      const refund = Math.floor(tower.investedGold * 0.7);
-      this.gold += refund;
-      tower.slot.tower = null;
-      const idx = this.towers.indexOf(tower);
-      if (idx !== -1) {
-        this.towers.splice(idx, 1);
-      }
-
-      this.sound.play("coin");
-      this.createFloatingText(`+${refund} 🪙`, tower.x, tower.y - 20, "#f1c40f", 1.25);
-      this.closeTowerQuickMenu();
       this.updateHUD();
     }
 
@@ -3732,6 +3755,389 @@
         void shieldIcon.offsetWidth;
         shieldIcon.classList.add("heal-impact");
       }
+    }
+
+    // --- GUARD CALL ABILITY (مهارة نداء الحرس الإمبراطوري) ---
+    castGuardCall() {
+      this.sound.play("guard_horn");
+      this.sound.play("spell");
+      this.spellsCastCount = (this.spellsCastCount || 0) + 1;
+
+      const isAr = this.lang === "ar";
+      this.createFloatingText(
+        isAr ? "🛡️ نداء الحرس: تقدمت كتيبة المشاة لحماية السور!" : "🛡️ Guard Call: Royal Infantry Phalanx Deployed!",
+        this.width * 0.33,
+        this.height * 0.48,
+        "#f1c40f",
+        1.35
+      );
+      this.shakeScreen(4.5, 0.3);
+
+      // 5 elite royal guards deployed in front of the castle wall covering all path approaches
+      const guardSlots = [
+        { rx: 0.305, ry: 0.20, role: "vanguard_north", nameAr: "حارس السور الشمالي", nameEn: "North Sentry" },
+        { rx: 0.320, ry: 0.35, role: "swordsman_upper", nameAr: "فارس الحرس", nameEn: "Shield Knight" },
+        { rx: 0.332, ry: 0.50, role: "captain", nameAr: "قائد الحرس الملكي 👑", nameEn: "Imperial Captain 👑", isCaptain: true },
+        { rx: 0.320, ry: 0.65, role: "swordsman_lower", nameAr: "فارس الحرس", nameEn: "Shield Knight" },
+        { rx: 0.305, ry: 0.80, role: "vanguard_south", nameAr: "حارس البرج الجنوبي", nameEn: "South Sentry" }
+      ];
+
+      const duration = 22; // 22 seconds
+      const baseHp = 550;
+
+      this.guards = guardSlots.map((slot, idx) => {
+        const gx = slot.rx * this.width;
+        const gy = slot.ry * this.height;
+
+        this.createGuardSpawnParticles(gx, gy);
+
+        const maxHp = slot.isCaptain ? Math.round(baseHp * 1.35) : baseHp;
+
+        return {
+          id: `guard_${Date.now()}_${idx}`,
+          rx: slot.rx,
+          ry: slot.ry,
+          x: gx,
+          y: gy,
+          maxHp: maxHp,
+          hp: maxHp,
+          duration: duration,
+          maxDuration: duration,
+          role: slot.role,
+          nameAr: slot.nameAr,
+          nameEn: slot.nameEn,
+          isCaptain: !!slot.isCaptain,
+          attackCooldown: 0.2 + idx * 0.15,
+          attackInterval: 0.85,
+          attackAnim: 0,
+          hitAnim: 0,
+          walkPhase: idx * 1.2,
+          radius: slot.isCaptain ? 18 : 16
+        };
+      });
+    }
+
+    createGuardSpawnParticles(x, y) {
+      this.createShockwave(x, y, "#f1c40f", 85, 0.45, 3.5);
+      this.createShockwave(x, y, "#3498db", 50, 0.3, 2.5);
+
+      for (let i = 0; i < 22; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 40 + Math.random() * 110;
+        this.particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 35,
+          drag: 0.94,
+          life: 0.5 + Math.random() * 0.35,
+          maxLife: 0.85,
+          color: Math.random() > 0.4 ? "#f1c40f" : "#e67e22",
+          size: 3 + Math.random() * 4
+        });
+      }
+    }
+
+    createGuardBlockParticles(gx, gy, dmg, enemy) {
+      this.shakeScreen(3.0, 0.2);
+
+      // Radiant shield deflection ring
+      this.createShockwave(gx, gy, "#f1c40f", Math.min(80, 40 + dmg * 0.15), 0.35, 3.0);
+      this.createShockwave(gx + 6, gy, "#74b9ff", Math.min(55, 30 + dmg * 0.1), 0.25, 2.0);
+
+      // Deflected spark burst flying forward against the enemy
+      const sparkCount = Math.min(18, 8 + Math.floor(dmg / 20));
+      for (let i = 0; i < sparkCount; i++) {
+        const ang = (Math.random() - 0.5) * 1.6;
+        const spd = 80 + Math.random() * 150;
+        this.particles.push({
+          type: "spark",
+          x: gx + 10,
+          y: gy + (Math.random() - 0.5) * 14,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          drag: 0.92,
+          life: 0.25 + Math.random() * 0.2,
+          maxLife: 0.45,
+          color: Math.random() > 0.4 ? "#f1c40f" : "#ecf0f1",
+          size: 2.5 + Math.random() * 2.5
+        });
+      }
+    }
+
+    createGuardDeathFX(gx, gy, isSlain) {
+      if (isSlain) {
+        this.sound.play("hit");
+        // Shield shatter debris particles
+        for (let i = 0; i < 16; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 40 + Math.random() * 90;
+          this.particles.push({
+            type: "debris",
+            x: gx,
+            y: gy,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 20,
+            gravity: 240,
+            drag: 0.94,
+            life: 0.45 + Math.random() * 0.3,
+            maxLife: 0.75,
+            color: Math.random() > 0.5 ? "#7f8c8d" : "#bdc3c7",
+            size: 3 + Math.random() * 4
+          });
+        }
+      } else {
+        // Honorable recall sparkle particles
+        for (let i = 0; i < 14; i++) {
+          this.particles.push({
+            type: "holy_mote",
+            x: gx + (Math.random() - 0.5) * 20,
+            y: gy + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 30,
+            vy: -40 - Math.random() * 60,
+            life: 0.45 + Math.random() * 0.3,
+            maxLife: 0.75,
+            color: "#f1c40f",
+            size: 3 + Math.random() * 3
+          });
+        }
+      }
+    }
+
+    updateGuards(dt) {
+      if (!this.guards || this.guards.length === 0) return;
+
+      for (let i = this.guards.length - 1; i >= 0; i--) {
+        const g = this.guards[i];
+
+        // Countdown active duration
+        g.duration -= dt;
+        if (g.duration <= 0 || g.hp <= 0) {
+          this.createGuardDeathFX(g.x, g.y, g.hp <= 0);
+          this.guards.splice(i, 1);
+          continue;
+        }
+
+        // Decay hit & attack animations
+        if (g.hitAnim > 0) g.hitAnim = Math.max(0, g.hitAnim - dt * 3.8);
+        if (g.attackAnim > 0) g.attackAnim = Math.max(0, g.attackAnim - dt * 4.5);
+        g.walkPhase += dt * 3.5;
+
+        // Ensure position responds to screen resizing
+        g.x = g.rx * this.width;
+        g.y = g.ry * this.height;
+
+        // Counter-Attack: nearby invaders within 85px get struck by infantry swords!
+        g.attackCooldown -= dt;
+        if (g.attackCooldown <= 0) {
+          const target = this.enemies.find(e => {
+            return e.hp > 0 && Math.hypot(e.x - g.x, e.y - g.y) <= 85;
+          });
+
+          if (target) {
+            g.attackCooldown = g.attackInterval;
+            g.attackAnim = 1.0;
+
+            const strikeDmg = g.isCaptain ? 52 : 38;
+            this.damageEnemy(target, strikeDmg, "physical", "#f1c40f", true);
+
+            // Melee sword slash sparks
+            for (let p = 0; p < 5; p++) {
+              this.particles.push({
+                x: target.x + (Math.random() - 0.5) * 10,
+                y: target.y + (Math.random() - 0.5) * 10,
+                vx: 40 + Math.random() * 60,
+                vy: (Math.random() - 0.5) * 70,
+                life: 0.18,
+                maxLife: 0.18,
+                color: "#f1c40f",
+                size: 2.5 + Math.random() * 2
+              });
+            }
+          }
+        }
+      }
+    }
+
+    renderGuards() {
+      if (!this.guards || this.guards.length === 0) return;
+
+      const isAr = this.lang === "ar";
+
+      this.guards.forEach(g => {
+        const x = g.x;
+        const y = g.y;
+        const isHit = g.hitAnim > 0;
+        const isAttacking = g.attackAnim > 0;
+        const hpPct = Math.max(0, Math.min(1, g.hp / g.maxHp));
+        const durationPct = Math.max(0, Math.min(1, g.duration / g.maxDuration));
+
+        this.ctx.save();
+
+        // 1. Ground Shadow & Golden Holy Aura Ring
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        this.ctx.beginPath();
+        this.ctx.ellipse(x, y + 16, 16, 7, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Pulsing golden vanguard protective circle
+        const auraPulse = 0.5 + Math.sin(g.walkPhase) * 0.25;
+        this.ctx.strokeStyle = `rgba(241, 196, 15, ${auraPulse * 0.7})`;
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y + 2, 22, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // 2. Billowing Cape
+        const capeWave = Math.sin(g.walkPhase) * 4;
+        this.ctx.fillStyle = g.isCaptain ? "#c0392b" : "#2980b9";
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - 8, y - 6);
+        this.ctx.lineTo(x - 18 + capeWave, y + 12);
+        this.ctx.lineTo(x - 8, y + 10);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 3. Knight Armor Body & Legs
+        this.ctx.fillStyle = isHit ? "#ffffff" : (g.isCaptain ? "#34495e" : "#2c3e50");
+        this.ctx.beginPath();
+        try {
+          if (typeof this.ctx.roundRect === "function") {
+            this.ctx.roundRect(x - 8, y - 8, 16, 20, 4);
+          } else {
+            this.ctx.rect(x - 8, y - 8, 16, 20);
+          }
+        } catch (e) {
+          this.ctx.rect(x - 8, y - 8, 16, 20);
+        }
+        this.ctx.fill();
+
+        // Gold Trim / Royal Breastplate Inlay
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - 5, y - 4);
+        this.ctx.lineTo(x, y + 4);
+        this.ctx.lineTo(x + 5, y - 4);
+        this.ctx.stroke();
+
+        // 4. Helmet & Red Feather Plume
+        this.ctx.fillStyle = isHit ? "#ffffff" : "#7f8c8d";
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - 12, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Golden Visor slit
+        this.ctx.fillStyle = "#111827";
+        this.ctx.fillRect(x - 2, y - 13, 6, 2.5);
+
+        // Feather Plume on helm
+        this.ctx.fillStyle = "#e74c3c";
+        this.ctx.beginPath();
+        this.ctx.ellipse(x - 3, y - 20, 3, 6, -0.3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 5. Heavy Tower Shield (Raised toward right facing oncoming monsters)
+        const shieldHitOffset = isHit ? -3 : (isAttacking ? 3 : 0);
+        const shieldX = x + 8 + shieldHitOffset;
+        const shieldY = y;
+
+        this.ctx.save();
+        this.ctx.fillStyle = isHit ? "#fff3cd" : (g.isCaptain ? "#1a252f" : "#2c3e50");
+        this.ctx.strokeStyle = isHit ? "#ffffff" : "#f1c40f";
+        this.ctx.lineWidth = 2;
+
+        // Curved kite shield path
+        this.ctx.beginPath();
+        this.ctx.moveTo(shieldX - 2, shieldY - 14);
+        this.ctx.lineTo(shieldX + 8, shieldY - 14);
+        this.ctx.lineTo(shieldX + 8, shieldY + 6);
+        this.ctx.lineTo(shieldX + 3, shieldY + 16);
+        this.ctx.lineTo(shieldX - 2, shieldY + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Golden Lion / Cross Crest on Shield
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(shieldX + 3, shieldY - 10);
+        this.ctx.lineTo(shieldX + 3, shieldY + 10);
+        this.ctx.moveTo(shieldX, shieldY - 3);
+        this.ctx.lineTo(shieldX + 6, shieldY - 3);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // 6. Thrusting Spear / Broadsword
+        const attackThrust = isAttacking ? 16 : 0;
+        this.ctx.strokeStyle = "#ecf0f1";
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 2, y + 2);
+        this.ctx.lineTo(x + 20 + attackThrust, y - 2);
+        this.ctx.stroke();
+
+        // Sword blade tip glint
+        this.ctx.fillStyle = "#f1c40f";
+        this.ctx.beginPath();
+        this.ctx.arc(x + 20 + attackThrust, y - 2, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 7. Captain's Imperial Battle Banner (if captain)
+        if (g.isCaptain) {
+          const bannerWave = Math.sin(g.walkPhase * 1.5) * 5;
+          this.ctx.strokeStyle = "#795548";
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(x - 10, y + 14);
+          this.ctx.lineTo(x - 10, y - 36);
+          this.ctx.stroke();
+
+          // Banner cloth
+          this.ctx.fillStyle = "#c0392b";
+          this.ctx.beginPath();
+          this.ctx.moveTo(x - 10, y - 35);
+          this.ctx.lineTo(x - 28 + bannerWave, y - 31);
+          this.ctx.lineTo(x - 24 + bannerWave, y - 19);
+          this.ctx.lineTo(x - 10, y - 17);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Gold eagle icon on banner
+          this.ctx.fillStyle = "#f1c40f";
+          this.ctx.font = "10px sans-serif";
+          this.ctx.fillText("🦅", x - 23 + bannerWave * 0.5, y - 23);
+        }
+
+        // 8. Overhead HP Bar & Remaining Duration Gauge
+        const barW = 34;
+        const barH = 5;
+        const barX = x - barW / 2;
+        const barY = y - 28;
+
+        // HP Background
+        this.ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        this.ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+        // HP Fill (Gradient green -> red)
+        const hpColor = hpPct > 0.5 ? "#2ecc71" : (hpPct > 0.25 ? "#f39c12" : "#e74c3c");
+        this.ctx.fillStyle = hpColor;
+        this.ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+        // Duration line underneath
+        this.ctx.fillStyle = "#38ef7d";
+        this.ctx.fillRect(barX, barY + barH + 1, barW * durationPct, 2);
+
+        // Shield status badge
+        this.ctx.fillStyle = "#f1c40f";
+        this.ctx.font = "bold 8px 'Tajawal', sans-serif";
+        this.ctx.textAlign = "center";
+        const title = isAr ? g.nameAr : g.nameEn;
+        this.ctx.fillText(title, x, barY - 4);
+
+        this.ctx.restore();
+      });
     }
 
     // --- WAVE GENERATOR & BOSS WAVES ---
@@ -4102,6 +4508,9 @@
       // Dynamic Weather System update
       this.updateWeather(dt);
 
+      // Update Royal Guards
+      this.updateGuards(dt);
+
       // Periodically refresh HUD
       this.updateHUD();
     }
@@ -4246,6 +4655,29 @@
 
     attackCastle(enemy) {
       const dmg = enemy.damageToCastle;
+
+      // Royal Guard Phalanx Damage Interception (نداء الحرس)
+      const aliveGuards = (this.guards || []).filter(g => g.hp > 0);
+      if (aliveGuards.length > 0) {
+        // Find the guard positioned vertically closest to the attacking enemy
+        aliveGuards.sort((a, b) => Math.abs(a.y - enemy.y) - Math.abs(b.y - enemy.y));
+        const guard = aliveGuards[0];
+
+        // Guard absorbs damage instead of the castle wall
+        guard.hp = Math.max(0, guard.hp - dmg);
+        guard.hitAnim = 1.0;
+
+        // Play shield block sound & block FX
+        this.sound.play("guard_block");
+        this.createGuardBlockParticles(guard.x, guard.y, dmg, enemy);
+
+        // Floating indicator: guard intercepted damage!
+        this.createFloatingText(`-${dmg} 🛡️`, guard.x + 12, guard.y - 16, "#f39c12", 1.25);
+
+        // Castle wall remains completely undamaged!
+        return;
+      }
+
       this.castleHp = Math.max(0, this.castleHp - dmg);
       this.sound.play("hit");
 
@@ -5414,6 +5846,8 @@
       this.floatingTexts = [];
       this.groundHazards = [];
       this.enemiesDefeatedCount = 0;
+      this.guards = [];
+      this.spellCooldowns.guard = 0;
 
       // Clear towers
       this.towers = [];
@@ -5436,6 +5870,7 @@
       this.renderBattlefieldBackground();
       this.renderGroundHazards();
       this.renderCastle();
+      this.renderGuards();
       this.renderSlots();
       this.renderTowers();
       this.renderEnemies();

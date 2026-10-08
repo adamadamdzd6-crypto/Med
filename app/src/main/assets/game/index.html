@@ -113,6 +113,12 @@
         <span class="spell-name" data-i18n="meteor">شهب</span>
         <div class="spell-cooldown" id="cd-meteor"></div>
       </div>
+      <div class="spell-btn" id="spell-guard" data-cost="45" data-type="mana" title="نداء الحرس" data-i18n-title="guardCall">
+        <span class="spell-icon">🛡️</span>
+        <span class="spell-cost">45 🔮</span>
+        <span class="spell-name" data-i18n="guardCall">نداء الحرس</span>
+        <div class="spell-cooldown" id="cd-guard"></div>
+      </div>
       <div class="spell-btn" id="spell-blizzard" data-cost="50" data-type="mana" title="عاصفة صقيع">
         <span class="spell-icon">❄️</span>
         <span class="spell-cost">50 🔮</span>
@@ -184,14 +190,23 @@
       </div>
     </div>
 
-    <!-- Bottom Weapon Shop Bar -->
+    <!-- Bottom Weapon & Army Bar -->
     <footer id="bottom-shop">
       <div class="shop-title-area">
-        <span class="shop-badge" data-i18n="shopTitle">ترسانة الدفاع</span>
-        <span class="shop-hint" data-i18n="shopHint">اختر سلاحاً ثم اضغط فوق أبراج وأسوار القلعة</span>
+        <div class="shop-tab-group">
+          <button id="tab-towers" class="shop-tab-btn active">
+            <span>🏰</span> <span data-i18n="tabTowers">أبراج القلعة</span>
+          </button>
+          <button id="tab-army" class="shop-tab-btn">
+            <span>⚔️</span> <span data-i18n="tabArmy">جيش الميدان</span>
+            <span class="army-live-badge" id="army-live-badge">0</span>
+          </button>
+        </div>
+        <span class="shop-hint" id="shop-dynamic-hint" data-i18n="shopHint">اختر سلاحاً ثم اضغط فوق أبراج وأسوار القلعة</span>
       </div>
 
-      <div class="shop-cards-scroll">
+      <!-- Towers Shop Scroll -->
+      <div class="shop-cards-scroll" id="shop-towers-scroll">
         <!-- Archer Card -->
         <div class="weapon-card" data-weapon="archer" data-cost="100">
           <div class="weapon-icon-box">🏹</div>
@@ -253,51 +268,64 @@
         </div>
       </div>
 
+      <!-- Royal Army Recruitment Scroll -->
+      <div class="shop-cards-scroll hidden" id="shop-army-scroll">
+        <!-- Swordsman Card -->
+        <div class="army-card" data-unit="swordsman" data-cost="35">
+          <div class="army-icon-box">⚔️</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="unitSwordsman">المشاة الملكي</span>
+            <span class="weapon-stat" data-i18n="unitSwordsmanDesc">سيف ودرع • صمود متقدم</span>
+          </div>
+          <div class="weapon-price army-price">35 🪙</div>
+        </div>
+
+        <!-- Archer Card -->
+        <div class="army-card" data-unit="archer" data-cost="50">
+          <div class="army-icon-box">🏹</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="unitArcher">رماة السهام</span>
+            <span class="weapon-stat" data-i18n="unitArcherDesc">رمي عن بعد • قذائف سريعة</span>
+          </div>
+          <div class="weapon-price army-price">50 🪙</div>
+        </div>
+
+        <!-- Paladin Card -->
+        <div class="army-card" data-unit="paladin" data-cost="75">
+          <div class="army-icon-box">🛡️</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="unitPaladin">الفارس الثقيل</span>
+            <span class="weapon-stat" data-i18n="unitPaladinDesc">درع فولاذي • صحة 580</span>
+          </div>
+          <div class="weapon-price army-price">75 🪙</div>
+        </div>
+
+        <!-- Cavalier Card -->
+        <div class="army-card" data-unit="cavalier" data-cost="95">
+          <div class="army-icon-box">🐎</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="unitCavalier">فرسان الخيالة</span>
+            <span class="weapon-stat" data-i18n="unitCavalierDesc">صدمة سريعة • هجوم ساحق</span>
+          </div>
+          <div class="weapon-price army-price">95 🪙</div>
+        </div>
+
+        <!-- War Machine Chariot Card -->
+        <div class="army-card" data-unit="war_chariot" data-cost="130">
+          <div class="army-icon-box">⚙️</div>
+          <div class="weapon-info">
+            <span class="weapon-name" data-i18n="unitWarChariot">منجنيق الميدان</span>
+            <span class="weapon-stat" data-i18n="unitWarChariotDesc">قذائف متفجرة • سحق جماعي</span>
+          </div>
+          <div class="weapon-price army-price">130 🪙</div>
+        </div>
+      </div>
+
       <!-- Cancel Selection Button (Shown when a weapon is chosen) -->
       <button id="btn-cancel-placement" class="cancel-btn hidden">
         <span data-i18n="cancel">إلغاء التحديد ✕</span>
       </button>
     </footer>
-
-    <!-- Floating Tower Quick Action Bar (Direct Canvas Upgrade & Management) -->
-    <div id="tower-quick-menu" class="tower-quick-menu hidden">
-      <div class="quick-menu-inner">
-        <div class="quick-tower-header">
-          <span class="quick-tower-icon" id="quick-tower-icon">🏹</span>
-          <div class="quick-tower-title-group">
-            <span class="quick-tower-name" id="quick-tower-name">رماة السهام</span>
-            <span class="quick-tower-level-badge" id="quick-tower-level">Lv.1</span>
-          </div>
-          <button id="btn-quick-close" class="quick-close-btn" title="إغلاق">✕</button>
-        </div>
-
-        <div class="quick-menu-buttons">
-          <!-- Fast Canvas Upgrade Button -->
-          <button id="btn-quick-upgrade" class="quick-btn btn-upgrade-quick">
-            <span class="qbtn-icon">⬆️</span>
-            <div class="qbtn-labels">
-              <span class="qbtn-title" data-i18n="upgrade">ترقية</span>
-              <span class="qbtn-cost" id="quick-upgrade-cost">150 🪙</span>
-            </div>
-          </button>
-
-          <!-- Fast Canvas Sell Button -->
-          <button id="btn-quick-sell" class="quick-btn btn-sell-quick">
-            <span class="qbtn-icon">💰</span>
-            <div class="qbtn-labels">
-              <span class="qbtn-title" data-i18n="sell">بيع</span>
-              <span class="qbtn-cost" id="quick-sell-refund">+70 🪙</span>
-            </div>
-          </button>
-
-          <!-- Full Inspector Modal Button -->
-          <button id="btn-quick-details" class="quick-btn btn-details-quick" title="تفاصيل كاملة">
-            <span class="qbtn-icon">⚙️</span>
-          </button>
-        </div>
-      </div>
-      <div class="quick-menu-arrow"></div>
-    </div>
 
     <!-- Weapon Upgrade & Management Popup -->
     <div id="weapon-modal" class="game-modal-overlay hidden">

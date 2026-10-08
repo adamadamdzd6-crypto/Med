@@ -2,9 +2,15 @@ package com.example
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
+import android.webkit.ConsoleMessage
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -98,8 +104,34 @@ fun GameScreen() {
         allowUniversalAccessFromFileURLs = true
       }
 
-      webChromeClient = WebChromeClient()
+      webChromeClient = object : WebChromeClient() {
+        override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+          consoleMessage?.let {
+            val msg = "${it.message()} [${it.sourceId()}:${it.lineNumber()}]"
+            when (it.messageLevel()) {
+              ConsoleMessage.MessageLevel.ERROR -> Log.e("CastleTDGame", msg)
+              ConsoleMessage.MessageLevel.WARNING -> Log.w("CastleTDGame", msg)
+              else -> Log.d("CastleTDGame", msg)
+            }
+          }
+          return true
+        }
+      }
+
       webViewClient = object : WebViewClient() {
+        override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+          Log.w("CastleTDGame", "WebView render process exited (crashed=${detail?.didCrash()}). Recovering...")
+          view?.post {
+            view.loadUrl("file:///android_asset/game/index.html")
+          }
+          return true
+        }
+
+        override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+          super.onReceivedError(view, request, error)
+          Log.e("CastleTDGame", "WebView resource error: ${error?.description}")
+        }
+
         override fun onPageFinished(view: WebView?, url: String?) {
           super.onPageFinished(view, url)
         }

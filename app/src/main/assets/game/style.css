@@ -411,14 +411,14 @@ html, body {
   left: calc(10px + var(--safe-left));
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   z-index: 20;
 }
 
 .spell-btn {
   position: relative;
   width: 58px;
-  height: 64px;
+  height: 62px;
   background: var(--panel-bg);
   backdrop-filter: blur(8px);
   border: 1.5px solid rgba(255, 215, 0, 0.3);
@@ -431,6 +431,19 @@ html, body {
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   transition: all 0.2s ease;
+}
+
+#spell-guard {
+  border-color: rgba(241, 196, 15, 0.45);
+}
+
+#spell-guard .spell-cost {
+  color: #a29bfe;
+}
+
+#spell-guard:hover {
+  border-color: #f1c40f;
+  box-shadow: 0 0 16px rgba(241, 196, 15, 0.4);
 }
 
 .spell-btn:active {
@@ -844,7 +857,57 @@ html, body {
 .shop-title-area {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
+}
+
+.shop-tab-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shop-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.shop-tab-btn.active {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.35), rgba(41, 128, 185, 0.65));
+  color: #fff;
+  border: 1px solid #3498db;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+#tab-army.active {
+  background: linear-gradient(135deg, rgba(230, 126, 34, 0.4), rgba(211, 84, 0, 0.7));
+  border-color: #e67e22;
+  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.35);
+}
+
+.army-live-badge {
+  background: #e74c3c;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 2px;
 }
 
 .shop-badge {
@@ -860,6 +923,57 @@ html, body {
 .shop-hint {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* Army Card Styling */
+.army-card {
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, rgba(41, 128, 185, 0.12), rgba(24, 44, 72, 0.35));
+  border: 1.5px solid rgba(52, 152, 219, 0.35);
+  border-radius: 12px;
+  padding: 6px 10px;
+  min-width: 144px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 52px;
+}
+
+.army-card:hover {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.25), rgba(41, 128, 185, 0.45));
+  border-color: #f1c40f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(52, 152, 219, 0.35);
+}
+
+.army-card:active {
+  transform: scale(0.94);
+}
+
+.army-card.disabled {
+  opacity: 0.4;
+  filter: grayscale(90%);
+  cursor: not-allowed;
+}
+
+.army-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(10, 24, 44, 0.7);
+  border: 1px solid rgba(52, 152, 219, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.army-price {
+  color: #54a0ff !important;
 }
 
 .shop-cards-scroll {
@@ -2787,216 +2901,5 @@ html, body {
   border-color: #2ecc71;
   color: #2ecc71;
   pointer-events: none;
-}
-
-/* ============================================================
-   FLOATING TOWER QUICK MANAGEMENT MENU (قائمة الترقية السريعة فوق الأبراج)
-   ============================================================ */
-.tower-quick-menu {
-  position: absolute;
-  z-index: 80;
-  transform: translate(-50%, -100%) translateY(-12px);
-  pointer-events: auto;
-  transition: opacity 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.85));
-}
-
-.tower-quick-menu.hidden {
-  opacity: 0;
-  transform: translate(-50%, -90%) scale(0.9);
-  pointer-events: none;
-}
-
-.quick-menu-inner {
-  background: rgba(14, 21, 32, 0.96);
-  backdrop-filter: blur(14px);
-  border: 1.5px solid rgba(46, 204, 113, 0.45);
-  border-radius: 12px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  box-shadow: 0 0 18px rgba(46, 204, 113, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  min-width: 195px;
-  user-select: none;
-}
-
-.quick-tower-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 5px;
-}
-
-.quick-tower-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.quick-tower-title-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-
-.quick-tower-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #fff;
-  white-space: nowrap;
-}
-
-.quick-tower-level-badge {
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(241, 196, 15, 0.2);
-  color: #f1c40f;
-  border: 1px solid rgba(241, 196, 15, 0.4);
-}
-
-.quick-close-btn {
-  background: transparent;
-  border: none;
-  color: #7f8c8d;
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 2px 5px;
-  border-radius: 4px;
-  line-height: 1;
-}
-
-.quick-close-btn:hover {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.15);
-}
-
-.quick-menu-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.quick-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.qbtn-icon {
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.qbtn-labels {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: right;
-  line-height: 1.15;
-}
-
-.qbtn-title {
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.qbtn-cost {
-  font-size: 0.65rem;
-  font-weight: 700;
-  opacity: 0.9;
-  font-family: monospace;
-}
-
-/* Upgrade button styles */
-.btn-upgrade-quick {
-  background: linear-gradient(135deg, rgba(46, 204, 113, 0.25), rgba(39, 174, 96, 0.4));
-  border-color: #2ecc71;
-  color: #2ecc71;
-  flex: 1.2;
-}
-
-.btn-upgrade-quick:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(46, 204, 113, 0.4), rgba(39, 174, 96, 0.6));
-  transform: translateY(-1px);
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
-}
-
-.btn-upgrade-quick:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
-.btn-upgrade-quick:disabled,
-.btn-upgrade-quick.locked {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #7f8c8d;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.btn-upgrade-quick.max-level {
-  background: rgba(241, 196, 15, 0.15);
-  border-color: #f1c40f;
-  color: #f1c40f;
-  cursor: default;
-  pointer-events: none;
-}
-
-/* Sell button styles */
-.btn-sell-quick {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: rgba(231, 76, 60, 0.35);
-  color: #e74c3c;
-  flex: 1;
-}
-
-.btn-sell-quick:hover {
-  background: rgba(231, 76, 60, 0.3);
-  border-color: #e74c3c;
-  transform: translateY(-1px);
-}
-
-.btn-sell-quick:active {
-  transform: scale(0.96);
-}
-
-/* Details button styles */
-.btn-details-quick {
-  background: rgba(52, 152, 219, 0.15);
-  border-color: rgba(52, 152, 219, 0.35);
-  color: #5dade2;
-  padding: 6px 8px;
-}
-
-.btn-details-quick:hover {
-  background: rgba(52, 152, 219, 0.3);
-  border-color: #3498db;
-  transform: translateY(-1px);
-}
-
-.btn-details-quick:active {
-  transform: scale(0.96);
-}
-
-/* Downward arrow indicator pointing at tower */
-.quick-menu-arrow {
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top: 7px solid #2ecc71;
-  margin: 0 auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
