@@ -99,6 +99,22 @@
       </div>
     </header>
 
+    <!-- Interactive Weapon Placement Guide Banner (توجيه النشر التفاعلي للأسلحة) -->
+    <div id="placement-guide-banner" class="placement-guide-banner hidden">
+      <div class="guide-weapon-badge" id="guide-weapon-icon">🎯</div>
+      <div class="guide-text-wrap">
+        <div class="guide-title-row">
+          <span class="guide-title" id="guide-weapon-name">قاذف الباليستا</span>
+          <span class="guide-cost" id="guide-weapon-cost">225 🪙</span>
+        </div>
+        <span class="guide-hint" id="guide-weapon-hint">انقر فوق أي موقع بالأخضر (+) بالقلعة لوضعه</span>
+      </div>
+      <div class="guide-btn-group">
+        <button id="btn-guide-auto-place" class="guide-auto-btn" title="نشر تلقائي في أفضل موقع بالقلعة">⚡ نشر تلقائي</button>
+        <button id="btn-guide-cancel" class="guide-cancel-btn" title="إلغاء التحديد">✕ إلغاء</button>
+      </div>
+    </div>
+
     <!-- Castle Spells & Tactical Abilities (Right Edge) -->
     <div id="spells-bar">
       <div class="spell-btn" id="spell-repair" data-cost="75" data-type="gold" title="إصلاح السور">
@@ -190,134 +206,212 @@
       </div>
     </div>
 
-    <!-- Bottom Weapon & Army Bar -->
+    <!-- Bottom Weapon & Army Bar (واجهة الحرب المنظمة والمبسطة) -->
     <footer id="bottom-shop">
-      <div class="shop-title-area">
-        <div class="shop-tab-group">
-          <button id="tab-towers" class="shop-tab-btn active">
-            <span>🏰</span> <span data-i18n="tabTowers">أبراج القلعة</span>
-          </button>
-          <button id="tab-army" class="shop-tab-btn">
-            <span>⚔️</span> <span data-i18n="tabArmy">جيش الميدان</span>
-            <span class="army-live-badge" id="army-live-badge">0</span>
-          </button>
-        </div>
-        <span class="shop-hint" id="shop-dynamic-hint" data-i18n="shopHint">اختر سلاحاً ثم اضغط فوق أبراج وأسوار القلعة</span>
+      <!-- Main Category Buttons: الأسلحة & الجيش -->
+      <div id="war-category-bar" class="war-category-bar">
+        <button id="btn-category-weapons" class="category-toggle-btn wpn-cat-btn" title="عرض أسلحة وأبراج القلعة">
+          <div class="cat-btn-glow"></div>
+          <div class="cat-icon-badge">🏹</div>
+          <div class="cat-info">
+            <span class="cat-title" data-i18n="catWeapons">الأسلحة 🏹</span>
+            <span class="cat-sub" data-i18n="catWeaponsSub">أبراج ودفاعات القلعة</span>
+          </div>
+          <span class="cat-indicator" id="wpn-indicator">▾</span>
+        </button>
+
+        <button id="btn-category-army" class="category-toggle-btn army-cat-btn" title="عرض فيلق الجيش وقوات الميدان">
+          <div class="cat-btn-glow"></div>
+          <div class="cat-icon-badge">⚔️</div>
+          <div class="cat-info">
+            <div class="cat-title-row">
+              <span class="cat-title" data-i18n="catArmy">الجيش ⚔️</span>
+              <span class="army-live-badge" id="army-live-badge">0</span>
+            </div>
+            <span class="cat-sub" data-i18n="catArmySub">قوات الميدان والتشكيلات</span>
+          </div>
+          <span class="cat-indicator" id="army-indicator">▾</span>
+        </button>
       </div>
 
-      <!-- Towers Shop Scroll -->
-      <div class="shop-cards-scroll" id="shop-towers-scroll">
-        <!-- Archer Card -->
-        <div class="weapon-card" data-weapon="archer" data-cost="100">
-          <div class="weapon-icon-box">🏹</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnArcher">رماة السهام</span>
-            <span class="weapon-stat" data-i18n="wpnArcherDesc">سريع • مهدئ</span>
+      <!-- Organized Drawer Panels (تفتح فقط عند الضغط على الزر المطلوب) -->
+      <div id="war-drawer-container" class="war-drawer-container collapsed">
+        <!-- 1. Weapons Panel: يظهر فقط عند الضغط على زر الأسلحة -->
+        <div id="drawer-weapons-panel" class="drawer-panel hidden" style="display: none;">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <span class="drawer-icon">🏹</span>
+              <div>
+                <h4 class="drawer-title" data-i18n="weaponsDrawerTitle">ترسانة الأسلحة وأبراج القلعة</h4>
+                <p class="drawer-hint" data-i18n="shopHint">اختر سلاحاً ثم اضغط فوق أبراج وأسوار القلعة لنشره</p>
+              </div>
+            </div>
+            <div class="drawer-actions">
+              <button id="btn-quick-weapon" class="drawer-quick-action-btn" title="تجهيز فوري تلقائي لأفضل سلاح">
+                <span>⚡ تجهيز فوري</span>
+                <span class="drawer-quick-cost" id="quick-weapon-cost-hint">100 🪙</span>
+              </button>
+              <button class="drawer-close-btn" id="btn-close-weapons-drawer" title="إغلاق قائمة الأسلحة">✕</button>
+            </div>
           </div>
-          <div class="weapon-price">100 🪙</div>
+
+          <!-- Towers Shop Scroll -->
+          <div class="shop-cards-scroll" id="shop-towers-scroll">
+            <!-- Archer Card -->
+            <div class="weapon-card" data-weapon="archer" data-cost="100">
+              <div class="weapon-icon-box">🏹</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnArcher">رماة السهام</span>
+                <span class="weapon-stat" data-i18n="wpnArcherDesc">سريع • مهدئ</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">100 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="archer" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+
+            <!-- Cannon Card -->
+            <div class="weapon-card" data-weapon="cannon" data-cost="175">
+              <div class="weapon-icon-box">💣</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnCannon">مدفع الحصار</span>
+                <span class="weapon-stat" data-i18n="wpnCannonDesc">انفجار • ضرر جماعي</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">175 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="cannon" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+
+            <!-- Ballista Card -->
+            <div class="weapon-card" data-weapon="ballista" data-cost="225">
+              <div class="weapon-icon-box">🎯</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnBallista">قاذف الباليستا</span>
+                <span class="weapon-stat" data-i18n="wpnBallistaDesc">مدى بعيد • خارق للدروع</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">225 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="ballista" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+
+            <!-- Flamethrower Card -->
+            <div class="weapon-card" data-weapon="flamethrower" data-cost="250">
+              <div class="weapon-icon-box">🔥</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnFlame">قاذف النيران</span>
+                <span class="weapon-stat" data-i18n="wpnFlameDesc">حرق مستمر • يبطئ</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">250 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="flamethrower" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+
+            <!-- Tesla Lightning Card -->
+            <div class="weapon-card" data-weapon="tesla" data-cost="300">
+              <div class="weapon-icon-box">⚡</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnTesla">برج الصواعق</span>
+                <span class="weapon-stat" data-i18n="wpnTeslaDesc">صاعقة متشعبة • صدمة</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">300 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="tesla" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+
+            <!-- Catapult Mortar Card -->
+            <div class="weapon-card" data-weapon="catapult" data-cost="350">
+              <div class="weapon-icon-box">☄️</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="wpnCatapult">المنجنيق الصخري</span>
+                <span class="weapon-stat" data-i18n="wpnCatapultDesc">صخور عملاقة • سحق</span>
+              </div>
+              <div class="weapon-action-box">
+                <span class="weapon-price">350 🪙</span>
+                <button class="btn-card-direct-deploy" data-weapon="catapult" title="نشر فوري في القلعة">⚡ نشر</button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Cannon Card -->
-        <div class="weapon-card" data-weapon="cannon" data-cost="175">
-          <div class="weapon-icon-box">💣</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnCannon">مدفع الحصار</span>
-            <span class="weapon-stat" data-i18n="wpnCannonDesc">انفجار • ضرر جماعي</span>
+        <!-- 2. Army Panel: يظهر فقط عند الضغط على زر الجيش -->
+        <div id="drawer-army-panel" class="drawer-panel hidden" style="display: none;">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <span class="drawer-icon">⚔️</span>
+              <div>
+                <h4 class="drawer-title" data-i18n="armyDrawerTitle">فيلق الجيش وقوات الميدان</h4>
+                <p class="drawer-hint" data-i18n="armyHint">اضغط لتجنيد المقاتلين • يمكنك سحب وإفلات الجنود في الميدان لتغيير موقعهم</p>
+              </div>
+            </div>
+            <div class="drawer-actions">
+              <button id="btn-formation" class="formation-btn" title="تغيير التشكيل الدفاعي">
+                <span id="formation-icon">🛡️</span>
+                <span id="formation-label" data-i18n="formationFront">تشكيل: جدار أمامي</span>
+              </button>
+              <button id="btn-quick-army" class="drawer-quick-action-btn" title="استدعاء فوري تلقائي لمقاتل">
+                <span>⚡ استدعاء فوري</span>
+                <span class="drawer-quick-cost" id="quick-army-cost-hint">35 🪙</span>
+              </button>
+              <button class="drawer-close-btn" id="btn-close-army-drawer" title="إغلاق قائمة الجيش">✕</button>
+            </div>
           </div>
-          <div class="weapon-price">175 🪙</div>
-        </div>
 
-        <!-- Ballista Card -->
-        <div class="weapon-card" data-weapon="ballista" data-cost="225">
-          <div class="weapon-icon-box">🎯</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnBallista">قاذف الباليستا</span>
-            <span class="weapon-stat" data-i18n="wpnBallistaDesc">مدى بعيد • خارق للدروع</span>
-          </div>
-          <div class="weapon-price">225 🪙</div>
-        </div>
+          <!-- Royal Army Recruitment Scroll -->
+          <div class="shop-cards-scroll" id="shop-army-scroll">
+            <!-- Swordsman Card -->
+            <div class="army-card" data-unit="swordsman" data-cost="35">
+              <div class="army-icon-box">⚔️</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="unitSwordsman">المشاة الملكي</span>
+                <span class="weapon-stat" data-i18n="unitSwordsmanDesc">سيف ودرع • صمود متقدم</span>
+              </div>
+              <div class="weapon-price army-price">35 🪙</div>
+            </div>
 
-        <!-- Flamethrower Card -->
-        <div class="weapon-card" data-weapon="flamethrower" data-cost="250">
-          <div class="weapon-icon-box">🔥</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnFlame">قاذف النيران</span>
-            <span class="weapon-stat" data-i18n="wpnFlameDesc">حرق مستمر • يبطئ</span>
-          </div>
-          <div class="weapon-price">250 🪙</div>
-        </div>
+            <!-- Archer Card -->
+            <div class="army-card" data-unit="archer" data-cost="50">
+              <div class="army-icon-box">🏹</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="unitArcher">رماة السهام</span>
+                <span class="weapon-stat" data-i18n="unitArcherDesc">رمي عن بعد • قذائف سريعة</span>
+              </div>
+              <div class="weapon-price army-price">50 🪙</div>
+            </div>
 
-        <!-- Tesla Lightning Card -->
-        <div class="weapon-card" data-weapon="tesla" data-cost="300">
-          <div class="weapon-icon-box">⚡</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnTesla">برج الصواعق</span>
-            <span class="weapon-stat" data-i18n="wpnTeslaDesc">صاعقة متشعبة • صدمة</span>
-          </div>
-          <div class="weapon-price">300 🪙</div>
-        </div>
+            <!-- Paladin Card -->
+            <div class="army-card" data-unit="paladin" data-cost="75">
+              <div class="army-icon-box">🛡️</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="unitPaladin">الفارس الثقيل</span>
+                <span class="weapon-stat" data-i18n="unitPaladinDesc">درع فولاذي • صحة 580</span>
+              </div>
+              <div class="weapon-price army-price">75 🪙</div>
+            </div>
 
-        <!-- Catapult Mortar Card -->
-        <div class="weapon-card" data-weapon="catapult" data-cost="350">
-          <div class="weapon-icon-box">☄️</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="wpnCatapult">المنجنيق الصخري</span>
-            <span class="weapon-stat" data-i18n="wpnCatapultDesc">صخور عملاقة • سحق</span>
-          </div>
-          <div class="weapon-price">350 🪙</div>
-        </div>
-      </div>
+            <!-- Cavalier Card -->
+            <div class="army-card" data-unit="cavalier" data-cost="95">
+              <div class="army-icon-box">🐎</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="unitCavalier">فرسان الخيالة</span>
+                <span class="weapon-stat" data-i18n="unitCavalierDesc">صدمة سريعة • هجوم ساحق</span>
+              </div>
+              <div class="weapon-price army-price">95 🪙</div>
+            </div>
 
-      <!-- Royal Army Recruitment Scroll -->
-      <div class="shop-cards-scroll hidden" id="shop-army-scroll">
-        <!-- Swordsman Card -->
-        <div class="army-card" data-unit="swordsman" data-cost="35">
-          <div class="army-icon-box">⚔️</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="unitSwordsman">المشاة الملكي</span>
-            <span class="weapon-stat" data-i18n="unitSwordsmanDesc">سيف ودرع • صمود متقدم</span>
+            <!-- War Machine Chariot Card -->
+            <div class="army-card" data-unit="war_chariot" data-cost="130">
+              <div class="army-icon-box">⚙️</div>
+              <div class="weapon-info">
+                <span class="weapon-name" data-i18n="unitWarChariot">منجنيق الميدان</span>
+                <span class="weapon-stat" data-i18n="unitWarChariotDesc">قذائف متفجرة • سحق جماعي</span>
+              </div>
+              <div class="weapon-price army-price">130 🪙</div>
+            </div>
           </div>
-          <div class="weapon-price army-price">35 🪙</div>
-        </div>
-
-        <!-- Archer Card -->
-        <div class="army-card" data-unit="archer" data-cost="50">
-          <div class="army-icon-box">🏹</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="unitArcher">رماة السهام</span>
-            <span class="weapon-stat" data-i18n="unitArcherDesc">رمي عن بعد • قذائف سريعة</span>
-          </div>
-          <div class="weapon-price army-price">50 🪙</div>
-        </div>
-
-        <!-- Paladin Card -->
-        <div class="army-card" data-unit="paladin" data-cost="75">
-          <div class="army-icon-box">🛡️</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="unitPaladin">الفارس الثقيل</span>
-            <span class="weapon-stat" data-i18n="unitPaladinDesc">درع فولاذي • صحة 580</span>
-          </div>
-          <div class="weapon-price army-price">75 🪙</div>
-        </div>
-
-        <!-- Cavalier Card -->
-        <div class="army-card" data-unit="cavalier" data-cost="95">
-          <div class="army-icon-box">🐎</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="unitCavalier">فرسان الخيالة</span>
-            <span class="weapon-stat" data-i18n="unitCavalierDesc">صدمة سريعة • هجوم ساحق</span>
-          </div>
-          <div class="weapon-price army-price">95 🪙</div>
-        </div>
-
-        <!-- War Machine Chariot Card -->
-        <div class="army-card" data-unit="war_chariot" data-cost="130">
-          <div class="army-icon-box">⚙️</div>
-          <div class="weapon-info">
-            <span class="weapon-name" data-i18n="unitWarChariot">منجنيق الميدان</span>
-            <span class="weapon-stat" data-i18n="unitWarChariotDesc">قذائف متفجرة • سحق جماعي</span>
-          </div>
-          <div class="weapon-price army-price">130 🪙</div>
         </div>
       </div>
 

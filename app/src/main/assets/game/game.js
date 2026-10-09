@@ -740,6 +740,21 @@
       unitCavalierDesc: "صدمة سريعة • هجوم ساحق",
       unitWarChariot: "منجنيق الميدان",
       unitWarChariotDesc: "قذائف متفجرة • سحق جماعي",
+      formationFront: "تشكيل: جدار أمامي",
+      formationFlank: "تشكيل: حماية جانبية",
+      formationWedge: "تشكيل: هجوم الوتد",
+      catWeapons: "الأسلحة 🏹",
+      catWeaponsSub: "أبراج ودفاعات القلعة",
+      catArmy: "الجيش ⚔️",
+      catArmySub: "قوات الميدان والتشكيلات",
+      weaponsDrawerTitle: "ترسانة الأسلحة وأبراج القلعة",
+      armyDrawerTitle: "فيلق الجيش وقوات الميدان",
+      quickWeaponTitle: "إحضار سلاح 🏹",
+      quickArmyTitle: "إحضار جيش ⚔️",
+      quickWeaponHint: "تجهيز فوري • 100 🪙",
+      quickArmyHint: "استدعاء فوري • 35 🪙",
+      uiSimplified: "مبسط ⚡",
+      uiDetailed: "تفصيلي ⚙️",
       cancel: "إلغاء التحديد ✕",
       wpnArcher: "رماة السهام",
       wpnArcherDesc: "سريع • مهدئ",
@@ -879,6 +894,21 @@
       unitCavalierDesc: "Fast Charge • High Impact",
       unitWarChariot: "War Chariot",
       unitWarChariotDesc: "Siege Mortar • AoE Blast",
+      formationFront: "Formation: Front Wall",
+      formationFlank: "Formation: Flank Guard",
+      formationWedge: "Formation: Wedge Assault",
+      catWeapons: "Weapons 🏹",
+      catWeaponsSub: "Castle Towers & Defense",
+      catArmy: "Army ⚔️",
+      catArmySub: "Field Forces & Formations",
+      weaponsDrawerTitle: "Weapons & Castle Towers",
+      armyDrawerTitle: "Royal Army & Field Forces",
+      quickWeaponTitle: "Deploy Weapon 🏹",
+      quickArmyTitle: "Deploy Army ⚔️",
+      quickWeaponHint: "Instant Equip • 100 🪙",
+      quickArmyHint: "Instant Summon • 35 🪙",
+      uiSimplified: "Simple ⚡",
+      uiDetailed: "Detailed ⚙️",
       cancel: "Cancel Selection ✕",
       wpnArcher: "Archer Garrison",
       wpnArcherDesc: "Fast • Rapid Fire",
@@ -1108,7 +1138,11 @@
       nameAr: "مسار الطريق الشمالي",
       nameEn: "Upper War Highway",
       waypoints: [
-        { rx: 0.28, ry: 0.44 }
+        { rx: 1.05, ry: 0.44 },
+        { rx: 0.82, ry: 0.44 },
+        { rx: 0.60, ry: 0.45 },
+        { rx: 0.42, ry: 0.47 },
+        { rx: 0.285, ry: 0.50 }
       ]
     },
     {
@@ -1116,7 +1150,11 @@
       nameAr: "قلب الطريق الإمبراطوري",
       nameEn: "Imperial Highway Center",
       waypoints: [
-        { rx: 0.28, ry: 0.48 }
+        { rx: 1.05, ry: 0.48 },
+        { rx: 0.82, ry: 0.48 },
+        { rx: 0.60, ry: 0.49 },
+        { rx: 0.42, ry: 0.50 },
+        { rx: 0.285, ry: 0.50 }
       ]
     },
     {
@@ -1124,7 +1162,11 @@
       nameAr: "المسار الأوسط الجنوبي",
       nameEn: "Central Highway Flank",
       waypoints: [
-        { rx: 0.28, ry: 0.52 }
+        { rx: 1.05, ry: 0.52 },
+        { rx: 0.82, ry: 0.52 },
+        { rx: 0.60, ry: 0.51 },
+        { rx: 0.42, ry: 0.50 },
+        { rx: 0.285, ry: 0.50 }
       ]
     },
     {
@@ -1132,7 +1174,11 @@
       nameAr: "مسار الطريق الجنوبي",
       nameEn: "Lower War Highway",
       waypoints: [
-        { rx: 0.28, ry: 0.56 }
+        { rx: 1.05, ry: 0.56 },
+        { rx: 0.82, ry: 0.56 },
+        { rx: 0.60, ry: 0.54 },
+        { rx: 0.42, ry: 0.52 },
+        { rx: 0.285, ry: 0.50 }
       ]
     }
   ];
@@ -2115,12 +2161,19 @@
 
       // Selection & Placement
       this.selectedShopWeapon = null;
+      this.lastWeaponSelectTime = 0;
       this.inspectingTower = null;
       this.hoveredSlot = null;
       this.currentShopTab = "towers";
+      this.isSimplifiedUI = false;
+      this.activeCategoryDrawer = null;
 
       // Royal Field Army state (فيلق الجيش الملكي الميداني)
       this.allies = [];
+      this.currentFormation = "front_wall"; // "front_wall", "flank_guard", "wedge_assault"
+      this.draggingAlly = null;
+      this.dragOffset = { x: 0, y: 0 };
+      this.dragPointerId = null;
 
       // Royal Guards active state (نداء الحرس)
       this.guards = [];
@@ -2794,6 +2847,19 @@
       document.documentElement.dir = this.lang === "ar" ? "rtl" : "ltr";
       document.getElementById("btn-lang").textContent = this.lang.toUpperCase();
 
+      const quickWpnHint = document.getElementById("quick-weapon-cost-hint");
+      if (quickWpnHint) {
+        quickWpnHint.textContent = dict.quickWeaponHint || (this.lang === "ar" ? "تجهيز فوري • 100 🪙" : "Instant Equip • 100 🪙");
+      }
+      const quickArmyHint = document.getElementById("quick-army-cost-hint");
+      if (quickArmyHint) {
+        quickArmyHint.textContent = dict.quickArmyHint || (this.lang === "ar" ? "استدعاء فوري • 35 🪙" : "Instant Summon • 35 🪙");
+      }
+      const uiModeText = document.getElementById("ui-mode-text");
+      if (uiModeText) {
+        uiModeText.textContent = this.isSimplifiedUI ? (this.lang === "ar" ? "تفصيلي" : "Detailed") : (this.lang === "ar" ? "مبسط" : "Simple");
+      }
+
       const bestiaryModal = document.getElementById("bestiary-modal");
       if (bestiaryModal && !bestiaryModal.classList.contains("hidden")) {
         this.renderBestiaryList(this.bestiaryFilter, this.bestiarySearch);
@@ -2967,6 +3033,39 @@
       if (cdGuard) cdGuard.style.height = this.spellCooldowns.guard > 0 ? `${(this.spellCooldowns.guard / 24) * 100}%` : "0%";
       const cdBlizzard = document.getElementById("cd-blizzard");
       if (cdBlizzard) cdBlizzard.style.height = this.spellCooldowns.blizzard > 0 ? `${(this.spellCooldowns.blizzard / 25) * 100}%` : "0%";
+
+      // Quick War Buttons state
+      const quickWpnBtn = document.getElementById("btn-quick-weapon");
+      if (quickWpnBtn) {
+        const emptySlots = this.slots.filter(s => !s.tower);
+        let canDeployOrUpgrade = false;
+        if (emptySlots.length > 0) {
+          canDeployOrUpgrade = this.gold >= 100;
+        } else {
+          canDeployOrUpgrade = this.towers.some(t => {
+            const tmpl = WEAPON_TYPES[t.id];
+            if (tmpl && tmpl.upgrades && t.level <= tmpl.upgrades.length) {
+              const upg = tmpl.upgrades[t.level - 1];
+              return upg && this.gold >= upg.cost;
+            }
+            return false;
+          });
+        }
+        if (canDeployOrUpgrade) {
+          quickWpnBtn.classList.remove("disabled");
+        } else {
+          quickWpnBtn.classList.add("disabled");
+        }
+      }
+
+      const quickArmyBtn = document.getElementById("btn-quick-army");
+      if (quickArmyBtn) {
+        if (this.gold >= 35) {
+          quickArmyBtn.classList.remove("disabled");
+        } else {
+          quickArmyBtn.classList.add("disabled");
+        }
+      }
     }
 
     updateShopCards() {
@@ -2981,10 +3080,16 @@
       });
 
       const cancelBtn = document.getElementById("btn-cancel-placement");
-      if (this.selectedShopWeapon) {
-        cancelBtn.classList.remove("hidden");
-      } else {
-        cancelBtn.classList.add("hidden");
+      if (cancelBtn) {
+        if (this.selectedShopWeapon) {
+          cancelBtn.classList.remove("hidden");
+        } else {
+          cancelBtn.classList.add("hidden");
+        }
+      }
+
+      if (!this.selectedShopWeapon) {
+        this.closePlacementGuide();
       }
     }
 
@@ -2994,28 +3099,131 @@
         this.recalcSlotPositions();
       });
 
-      // Shop card selection
+      // Main War Category Buttons (الأسلحة & الجيش)
+      const btnWpnCat = document.getElementById("btn-category-weapons");
+      if (btnWpnCat) {
+        btnWpnCat.addEventListener("click", () => {
+          this.toggleWarCategory("weapons");
+        });
+      }
+
+      const btnArmyCat = document.getElementById("btn-category-army");
+      if (btnArmyCat) {
+        btnArmyCat.addEventListener("click", () => {
+          this.toggleWarCategory("army");
+        });
+      }
+
+      // Drawer Close Buttons (✕)
+      const btnCloseWpn = document.getElementById("btn-close-weapons-drawer");
+      if (btnCloseWpn) {
+        btnCloseWpn.addEventListener("click", () => {
+          this.closeWarDrawer();
+        });
+      }
+
+      const btnCloseArmy = document.getElementById("btn-close-army-drawer");
+      if (btnCloseArmy) {
+        btnCloseArmy.addEventListener("click", () => {
+          this.closeWarDrawer();
+        });
+      }
+
+      // Quick War Command Buttons (تجهيز فوري واستدعاء فوري)
+      const quickWpnBtn = document.getElementById("btn-quick-weapon");
+      if (quickWpnBtn) {
+        quickWpnBtn.addEventListener("click", () => {
+          this.quickDeployWeapon();
+        });
+      }
+
+      const quickArmyBtn = document.getElementById("btn-quick-army");
+      if (quickArmyBtn) {
+        quickArmyBtn.addEventListener("click", () => {
+          this.quickDeployArmy();
+        });
+      }
+
+      // Formation Toggle Button (تغيير التشكيل القتالي)
+      const formationBtn = document.getElementById("btn-formation");
+      if (formationBtn) {
+        formationBtn.addEventListener("click", () => {
+          this.toggleFormation();
+        });
+      }
+
+      // Army Unit Recruitment Cards
+      document.querySelectorAll(".army-card").forEach(card => {
+        card.addEventListener("click", e => {
+          e.stopPropagation();
+          const uType = card.getAttribute("data-unit");
+          this.recruitUnit(uType);
+        });
+      });
+
+      // Direct deploy buttons on weapon cards (نشر فوري في القلعة بنقرة واحدة)
+      document.querySelectorAll(".btn-card-direct-deploy").forEach(btn => {
+        btn.addEventListener("click", e => {
+          e.stopPropagation();
+          const wType = btn.getAttribute("data-weapon");
+          this.deploySpecificWeapon(wType);
+        });
+      });
+
+      // Shop card selection (Towers manual placement mode)
       document.querySelectorAll(".weapon-card").forEach(card => {
         card.addEventListener("click", e => {
           e.stopPropagation();
           const wType = card.getAttribute("data-weapon");
           const template = WEAPON_TYPES[wType];
-          if (this.gold >= template.cost) {
-            this.selectedShopWeapon = template;
-            this.inspectingTower = null;
-            this.closeWeaponModal();
-            this.sound.play("build");
-            this.updateShopCards();
+          if (!template) return;
+
+          if (this.gold < template.cost) {
+            this.sound.play("error");
+            const wName = (I18N[this.lang] && I18N[this.lang][template.nameKey]) || template.id;
+            this.createFloatingText(
+              this.lang === "ar" ? `تحتاج ${template.cost} 🪙 لتجهيز ${wName}! (الذهب الحالي: ${this.gold} 🪙)` : `Need ${template.cost} 🪙 for ${wName}!`,
+              this.width * 0.35,
+              this.height * 0.5,
+              "#e74c3c",
+              1.2
+            );
+            return;
           }
+
+          this.selectedShopWeapon = template;
+          this.lastWeaponSelectTime = performance.now();
+          this.inspectingTower = null;
+          this.closeWeaponModal();
+          this.closeWarDrawer(); // Close drawer so player sees the wall slots clearly!
+          this.showPlacementGuide(template);
+          this.sound.play("build");
+          this.updateShopCards();
         });
       });
 
-      // Cancel button
-      document.getElementById("btn-cancel-placement").addEventListener("click", e => {
-        e.stopPropagation();
+      // Cancel button & Placement Guide Controls
+      const handleCancelPlacement = (e) => {
+        if (e) e.stopPropagation();
         this.selectedShopWeapon = null;
+        this.closePlacementGuide();
         this.updateShopCards();
-      });
+      };
+      const cancelBtn = document.getElementById("btn-cancel-placement");
+      if (cancelBtn) cancelBtn.addEventListener("click", handleCancelPlacement);
+
+      const guideCancelBtn = document.getElementById("btn-guide-cancel");
+      if (guideCancelBtn) guideCancelBtn.addEventListener("click", handleCancelPlacement);
+
+      const guideAutoBtn = document.getElementById("btn-guide-auto-place");
+      if (guideAutoBtn) {
+        guideAutoBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.selectedShopWeapon) {
+            this.deploySpecificWeapon(this.selectedShopWeapon.id);
+          }
+        });
+      }
 
       // Start wave button
       document.getElementById("btn-start-wave").addEventListener("click", () => {
@@ -3298,13 +3506,55 @@
         }
       });
 
-      // Canvas pointer interactions
+      // Canvas pointer interactions (Click, Drag & Drop soldiers)
       this.canvas.addEventListener("pointerdown", e => {
         const rect = this.canvas.getBoundingClientRect();
         const px = e.clientX - rect.left;
         const py = e.clientY - rect.top;
-        this.handlePointerDown(px, py);
+        this.handlePointerDown(px, py, e);
       });
+
+      this.canvas.addEventListener("pointermove", e => {
+        if (!this.draggingAlly) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const px = e.clientX - rect.left;
+        const py = e.clientY - rect.top;
+
+        // Constrain soldier within battlefield corridor (x: 0.27w to 0.95w, y: 0.36h to 0.64h)
+        const minX = this.width * 0.27;
+        const maxX = this.width * 0.95;
+        const minY = this.height * 0.36;
+        const maxY = this.height * 0.64;
+
+        this.draggingAlly.x = Math.max(minX, Math.min(maxX, px + this.dragOffset.x));
+        this.draggingAlly.y = Math.max(minY, Math.min(maxY, py + this.dragOffset.y));
+        this.draggingAlly.customPositioned = true;
+      });
+
+      const handlePointerUp = () => {
+        if (this.draggingAlly) {
+          this.sound.play("guard_block");
+          this.createShockwave(this.draggingAlly.x, this.draggingAlly.y, "#f1c40f", 36, 0.28, 2.5);
+          for (let p = 0; p < 8; p++) {
+            this.particles.push({
+              x: this.draggingAlly.x + (Math.random() - 0.5) * 10,
+              y: this.draggingAlly.y + (Math.random() - 0.5) * 10,
+              vx: (Math.random() - 0.5) * 40,
+              vy: -15 - Math.random() * 25,
+              life: 0.22,
+              maxLife: 0.22,
+              color: "#3498db",
+              size: 2.5
+            });
+          }
+          this.createFloatingText("DEFEND! 🛡️", this.draggingAlly.x, this.draggingAlly.y - 20, "#f1c40f", 1.05);
+          this.draggingAlly.isSelected = false;
+          this.draggingAlly = null;
+        }
+      };
+
+      this.canvas.addEventListener("pointerup", handlePointerUp);
+      this.canvas.addEventListener("pointercancel", handlePointerUp);
 
       // Modal buttons
       document.getElementById("btn-close-inspect").addEventListener("click", () => {
@@ -3419,49 +3669,213 @@
       }
     }
 
-    handlePointerDown(px, py) {
+    handlePointerDown(px, py, e) {
       this.sound.init();
 
-      // Check slot clicks
+      // 1. Check if tapping a friendly soldier to drag & drop
+      if (this.allies && this.allies.length > 0) {
+        for (let i = this.allies.length - 1; i >= 0; i--) {
+          const ally = this.allies[i];
+          if (ally.hp > 0 && Math.hypot(ally.x - px, ally.y - py) <= ally.radius + 14) {
+            this.draggingAlly = ally;
+            this.dragOffset.x = ally.x - px;
+            this.dragOffset.y = ally.y - py;
+            ally.isSelected = true;
+            this.sound.play("build");
+            this.createShockwave(ally.x, ally.y, "#3498db", 30, 0.22, 2.0);
+            return;
+          }
+        }
+      }
+
+      // 2. If a weapon is selected from the shop:
+      if (this.selectedShopWeapon) {
+        // Protect against touch/pointer leakage right after opening/selecting from card (350ms window)
+        if (performance.now() - (this.lastWeaponSelectTime || 0) < 350) {
+          return;
+        }
+
+        const template = this.selectedShopWeapon;
+        const castleMaxX = this.width * 0.36;
+
+        // A. Direct slot hit with generous hit radius (up to 65px radius!)
+        let targetSlot = null;
+        let minSlotDist = Infinity;
+        for (const slot of this.slots) {
+          const dist = Math.hypot(slot.x - px, slot.y - py);
+          if (dist < minSlotDist) {
+            minSlotDist = dist;
+            if (dist <= 65) {
+              targetSlot = slot;
+            }
+          }
+        }
+
+        // B. If user tapped on/near the castle area (px <= castleMaxX + 50) or within 120px of any slot:
+        if (!targetSlot && (px <= castleMaxX + 50 || minSlotDist <= 120)) {
+          // Find the closest empty slot to where they tapped!
+          const emptySlots = this.slots.filter(s => !s.tower);
+          if (emptySlots.length > 0) {
+            emptySlots.sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py));
+            targetSlot = emptySlots[0];
+          }
+        }
+
+        // C. If slot target is found or selected:
+        if (targetSlot) {
+          if (!targetSlot.tower) {
+            this.deploySpecificWeapon(template.id, targetSlot);
+            return;
+          } else {
+            // That slot already has a tower: find nearest empty slot on castle
+            const otherEmpty = this.slots.filter(s => !s.tower);
+            if (otherEmpty.length > 0) {
+              otherEmpty.sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py));
+              this.deploySpecificWeapon(template.id, otherEmpty[0]);
+              return;
+            } else {
+              this.sound.play("error");
+              this.createFloatingText(
+                this.lang === "ar" ? "جميع مواقع القلعة ممتلئة! يمكنك ترقية الأسلحة ⭐" : "All slots full! Tap to upgrade ⭐",
+                this.width * 0.35,
+                this.height * 0.45,
+                "#f39c12",
+                1.25
+              );
+              return;
+            }
+          }
+        } else {
+          // User tapped open battlefield far from castle
+          // DO NOT CANCEL PLACEMENT! Guide the user!
+          this.sound.play("error");
+          this.createFloatingText(
+            this.lang === "ar" ? "اضغط على القلعة ومواقع الأبراج (+) لنشر السلاح! 🏰" : "Tap on castle wall or (+) slots to place weapon! 🏰",
+            this.width * 0.35,
+            this.height * 0.5,
+            "#00cec9",
+            1.2
+          );
+          return;
+        }
+      }
+
+      // 3. Normal slot inspection / selection when NOT placing:
       let clickedSlot = null;
       for (const slot of this.slots) {
         const dist = Math.hypot(slot.x - px, slot.y - py);
-        if (dist <= slot.radius * 1.5) {
+        if (dist <= slot.radius * 1.8) {
           clickedSlot = slot;
           break;
         }
       }
 
       if (clickedSlot) {
-        if (this.selectedShopWeapon) {
-          // Attempt placing selected weapon
-          if (!clickedSlot.tower) {
-            this.buildTower(clickedSlot, this.selectedShopWeapon);
-            this.selectedShopWeapon = null;
-            this.updateShopCards();
-          } else {
-            // Already has tower, switch to inspecting
-            this.selectedShopWeapon = null;
-            this.updateShopCards();
-            this.inspectTower(clickedSlot.tower);
-          }
+        if (clickedSlot.tower) {
+          this.inspectTower(clickedSlot.tower);
         } else {
-          // Inspect existing tower or prompt
-          if (clickedSlot.tower) {
-            this.inspectTower(clickedSlot.tower);
-          }
+          // Tapped empty slot without weapon selected: open weapons drawer!
+          this.openWarDrawer("weapons");
+          this.createFloatingText(
+            this.lang === "ar" ? "اختر سلاحاً لنشره في هذا الموقع! 🏹" : "Choose weapon to deploy here! 🏹",
+            clickedSlot.x,
+            clickedSlot.y - 25,
+            "#00cec9",
+            1.15
+          );
         }
       } else {
         // Tapped open field
-        if (this.selectedShopWeapon) {
-          // Cancel placement mode
-          this.selectedShopWeapon = null;
-          this.updateShopCards();
-        }
         if (this.inspectingTower) {
           this.closeWeaponModal();
         }
       }
+    }
+
+    showPlacementGuide(template) {
+      const banner = document.getElementById("placement-guide-banner");
+      if (!banner) return;
+      const icon = document.getElementById("guide-weapon-icon");
+      const name = document.getElementById("guide-weapon-name");
+      const cost = document.getElementById("guide-weapon-cost");
+      const hint = document.getElementById("guide-weapon-hint");
+
+      const wName = (I18N[this.lang] && I18N[this.lang][template.nameKey]) || template.id;
+      if (icon) icon.textContent = template.icon;
+      if (name) name.textContent = wName;
+      if (cost) cost.textContent = `${template.cost} 🪙`;
+      if (hint) {
+        hint.textContent = this.lang === "ar"
+          ? "انقر فوق أي موقع بالأخضر (+) بالقلعة لوضعه (أو اضغط نشر تلقائي)"
+          : "Tap any green (+) slot on castle to place (or tap Auto Place)";
+      }
+      banner.classList.remove("hidden");
+    }
+
+    closePlacementGuide() {
+      const banner = document.getElementById("placement-guide-banner");
+      if (banner) banner.classList.add("hidden");
+    }
+
+    deploySpecificWeapon(wType, explicitSlot = null) {
+      const template = WEAPON_TYPES[wType];
+      if (!template) return false;
+
+      if (this.gold < template.cost) {
+        this.sound.play("error");
+        const wName = (I18N[this.lang] && I18N[this.lang][template.nameKey]) || template.id;
+        this.createFloatingText(
+          this.lang === "ar" ? `تحتاج ${template.cost} 🪙 لتجهيز ${wName}! (الذهب الحالي: ${this.gold} 🪙)` : `Need ${template.cost} 🪙 for ${wName}!`,
+          this.width * 0.35,
+          this.height * 0.5,
+          "#e74c3c",
+          1.25
+        );
+        return false;
+      }
+
+      // If explicitSlot provided and empty, use it
+      let targetSlot = explicitSlot;
+      if (targetSlot && targetSlot.tower) {
+        targetSlot = null; // occupied
+      }
+
+      // If no valid explicitSlot, select the best strategic empty slot on the castle
+      if (!targetSlot) {
+        const emptySlots = this.slots.filter(s => !s.tower);
+        if (emptySlots.length === 0) {
+          this.sound.play("error");
+          this.createFloatingText(
+            this.lang === "ar" ? "جميع مواقع القلعة ممتلئة! يمكنك ترقية الأسلحة الحالية ⭐" : "All slots full! Tap to upgrade ⭐",
+            this.width * 0.35,
+            this.height * 0.5,
+            "#f39c12",
+            1.25
+          );
+          return false;
+        }
+
+        const priorityOrder = [
+          "slot_gate_top", "slot_gate_low", "slot_fwd_top", "slot_fwd_bot",
+          "slot_wall_mid1", "slot_keep_mid", "slot_wall_top", "slot_wall_low1",
+          "slot_n_high1", "slot_n_high2", "slot_s_high1", "slot_s_high2"
+        ];
+        emptySlots.sort((a, b) => {
+          const idxA = priorityOrder.indexOf(a.id);
+          const idxB = priorityOrder.indexOf(b.id);
+          return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+        });
+        targetSlot = emptySlots[0];
+      }
+
+      // Build tower
+      this.buildTower(targetSlot, template);
+      const wName = (I18N[this.lang] && I18N[this.lang][template.nameKey]) || template.id;
+      this.createFloatingText(`+${template.icon} ${wName}!`, targetSlot.x, targetSlot.y - 30, "#00cec9", 1.35);
+      this.selectedShopWeapon = null;
+      this.closePlacementGuide();
+      this.updateShopCards();
+      return true;
     }
 
     // --- TOWER LOGIC ---
@@ -4140,6 +4554,906 @@
       });
     }
 
+    // --- QUICK WAR COMMANDS (أوامر الحرب السريعة والمبسطة بنقرة واحدة) ---
+    quickDeployWeapon() {
+      // 1. Check if there are open slots on the castle battlements
+      const emptySlots = this.slots.filter(s => !s.tower);
+
+      if (emptySlots.length > 0) {
+        // Prioritize key strategic slots (gate overlook, forward bastions, central wall)
+        const priorityOrder = [
+          "slot_gate_top", "slot_gate_low", "slot_fwd_top", "slot_fwd_bot",
+          "slot_wall_mid1", "slot_keep_mid", "slot_wall_top", "slot_wall_low1",
+          "slot_n_high1", "slot_n_high2", "slot_s_high1", "slot_s_high2"
+        ];
+        emptySlots.sort((a, b) => {
+          const idxA = priorityOrder.indexOf(a.id);
+          const idxB = priorityOrder.indexOf(b.id);
+          return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+        });
+        const bestSlot = emptySlots[0];
+
+        // Pick best weapon affordable
+        const candidates = [
+          WEAPON_TYPES.tesla,        // 300
+          WEAPON_TYPES.flamethrower, // 250
+          WEAPON_TYPES.ballista,     // 225
+          WEAPON_TYPES.cannon,       // 175
+          WEAPON_TYPES.archer        // 100
+        ];
+
+        const affordable = candidates.find(w => this.gold >= w.cost);
+        if (!affordable) {
+          this.sound.play("error");
+          this.createFloatingText(this.lang === "ar" ? "تحتاج 100 🪙 على الأقل لتجهيز سلاح! 🏹" : "Need at least 100 🪙 to deploy weapon!", this.width * 0.35, this.height * 0.5, "#e74c3c", 1.25);
+          return;
+        }
+
+        this.buildTower(bestSlot, affordable);
+        this.sound.play("build");
+        this.createShockwave(bestSlot.x, bestSlot.y, "#00cec9", 60, 0.35, 3.0);
+        for (let i = 0; i < 12; i++) {
+          this.particles.push({
+            type: "spark",
+            x: bestSlot.x + (Math.random() - 0.5) * 16,
+            y: bestSlot.y + (Math.random() - 0.5) * 16,
+            vx: (Math.random() - 0.5) * 70,
+            vy: -20 - Math.random() * 50,
+            drag: 0.93,
+            life: 0.3,
+            maxLife: 0.3,
+            color: "#00cec9",
+            size: 3
+          });
+        }
+        const wName = I18N[this.lang][affordable.nameKey] || affordable.id;
+        this.createFloatingText(`+${affordable.icon} ${wName}!`, bestSlot.x, bestSlot.y - 25, "#00cec9", 1.3);
+        this.updateHUD();
+        return;
+      }
+
+      // 2. All slots filled: Automatically upgrade an existing tower!
+      const upgradableTowers = [];
+      this.towers.forEach(t => {
+        const tmpl = WEAPON_TYPES[t.id];
+        if (tmpl && tmpl.upgrades && t.level <= tmpl.upgrades.length) {
+          const upg = tmpl.upgrades[t.level - 1];
+          if (upg) {
+            upgradableTowers.push({ tower: t, upgrade: upg, cost: upg.cost, level: t.level });
+          }
+        }
+      });
+
+      if (upgradableTowers.length === 0) {
+        this.createFloatingText(this.lang === "ar" ? "جميع الأسلحة في أعلى مستوى! ⭐" : "All weapons at max level!", this.width * 0.35, this.height * 0.5, "#f1c40f", 1.2);
+        return;
+      }
+
+      upgradableTowers.sort((a, b) => a.level - b.level || a.cost - b.cost);
+      const affordableUpg = upgradableTowers.find(u => this.gold >= u.cost);
+
+      if (!affordableUpg) {
+        const minCost = upgradableTowers[0].cost;
+        this.sound.play("error");
+        this.createFloatingText(this.lang === "ar" ? `تحتاج ${minCost} 🪙 لترقية السلاح! ⭐` : `Need ${minCost} 🪙 to upgrade weapon!`, this.width * 0.35, this.height * 0.5, "#e74c3c", 1.25);
+        return;
+      }
+
+      this.gold -= affordableUpg.cost;
+      const tower = affordableUpg.tower;
+      const upg = affordableUpg.upgrade;
+      tower.level++;
+      if (upg.damage) tower.damage = upg.damage;
+      if (upg.range) tower.range = upg.range;
+      if (upg.fireRate) tower.fireRate = upg.fireRate;
+      if (upg.aoe) tower.aoe = upg.aoe;
+      if (upg.pierce) tower.pierce = upg.pierce;
+
+      this.sound.play("build");
+      this.createShockwave(tower.x, tower.y, "#f1c40f", 65, 0.4, 3.5);
+      for (let i = 0; i < 14; i++) {
+        this.particles.push({
+          type: "spark",
+          x: tower.x + (Math.random() - 0.5) * 16,
+          y: tower.y + (Math.random() - 0.5) * 16,
+          vx: (Math.random() - 0.5) * 80,
+          vy: -30 - Math.random() * 60,
+          drag: 0.92,
+          life: 0.35,
+          maxLife: 0.35,
+          color: "#f1c40f",
+          size: 3.5
+        });
+      }
+      this.createFloatingText(`⭐ Lvl ${tower.level} UPGRADE!`, tower.x, tower.y - 25, "#f1c40f", 1.35);
+      this.updateHUD();
+    }
+
+    quickDeployArmy() {
+      if (this.gold < 35) {
+        this.sound.play("error");
+        this.createFloatingText(this.lang === "ar" ? "تحتاج 35 🪙 لتجنيد مقاتل! ⚔️" : "Need 35 🪙 to recruit troop!", this.width * 0.38, this.height * 0.5, "#e74c3c", 1.25);
+        return;
+      }
+
+      // Smart unit recruitment selection based on gold
+      const candidates = [];
+      if (this.gold >= 130) candidates.push("war_chariot", "cavalier", "paladin");
+      else if (this.gold >= 95) candidates.push("cavalier", "paladin", "archer");
+      else if (this.gold >= 75) candidates.push("paladin", "archer", "swordsman");
+      else if (this.gold >= 50) candidates.push("archer", "swordsman");
+      else candidates.push("swordsman");
+
+      const chosenType = candidates[Math.floor(Math.random() * candidates.length)];
+      this.recruitUnit(chosenType);
+    }
+
+    // --- WAR CATEGORY CONTROLS (نظام فئات الحرب المنظم: الأسلحة والجيش) ---
+    toggleWarCategory(category) {
+      if (this.activeCategoryDrawer === category) {
+        this.closeWarDrawer();
+        return;
+      }
+      this.openWarDrawer(category);
+    }
+
+    openWarDrawer(category) {
+      this.activeCategoryDrawer = category;
+      this.currentShopTab = category === "weapons" ? "towers" : "army";
+      const drawerContainer = document.getElementById("war-drawer-container");
+      const wpnPanel = document.getElementById("drawer-weapons-panel");
+      const armyPanel = document.getElementById("drawer-army-panel");
+      const btnWpn = document.getElementById("btn-category-weapons");
+      const btnArmy = document.getElementById("btn-category-army");
+      const wpnIndicator = document.getElementById("wpn-indicator");
+      const armyIndicator = document.getElementById("army-indicator");
+
+      if (drawerContainer) drawerContainer.classList.remove("collapsed");
+
+      if (category === "weapons") {
+        if (wpnPanel) {
+          wpnPanel.style.display = "flex";
+          wpnPanel.classList.remove("hidden");
+        }
+        if (armyPanel) {
+          armyPanel.style.display = "none";
+          armyPanel.classList.add("hidden");
+        }
+        if (btnWpn) btnWpn.classList.add("active");
+        if (btnArmy) btnArmy.classList.remove("active");
+        if (wpnIndicator) wpnIndicator.textContent = "▴";
+        if (armyIndicator) armyIndicator.textContent = "▾";
+        this.sound.play("upgrade");
+      } else if (category === "army") {
+        if (armyPanel) {
+          armyPanel.style.display = "flex";
+          armyPanel.classList.remove("hidden");
+        }
+        if (wpnPanel) {
+          wpnPanel.style.display = "none";
+          wpnPanel.classList.add("hidden");
+        }
+        if (btnArmy) btnArmy.classList.add("active");
+        if (btnWpn) btnWpn.classList.remove("active");
+        if (armyIndicator) armyIndicator.textContent = "▴";
+        if (wpnIndicator) wpnIndicator.textContent = "▾";
+        this.sound.play("guard");
+      }
+
+      this.updateShopCards();
+    }
+
+    closeWarDrawer() {
+      this.activeCategoryDrawer = null;
+      const drawerContainer = document.getElementById("war-drawer-container");
+      const wpnPanel = document.getElementById("drawer-weapons-panel");
+      const armyPanel = document.getElementById("drawer-army-panel");
+      const btnWpn = document.getElementById("btn-category-weapons");
+      const btnArmy = document.getElementById("btn-category-army");
+      const wpnIndicator = document.getElementById("wpn-indicator");
+      const armyIndicator = document.getElementById("army-indicator");
+
+      if (drawerContainer) drawerContainer.classList.add("collapsed");
+      if (wpnPanel) {
+        wpnPanel.style.display = "none";
+        wpnPanel.classList.add("hidden");
+      }
+      if (armyPanel) {
+        armyPanel.style.display = "none";
+        armyPanel.classList.add("hidden");
+      }
+      if (btnWpn) btnWpn.classList.remove("active");
+      if (btnArmy) btnArmy.classList.remove("active");
+      if (wpnIndicator) wpnIndicator.textContent = "▾";
+      if (armyIndicator) armyIndicator.textContent = "▾";
+      this.sound.play("click");
+    }
+
+    // --- ROYAL FIELD ARMY LOGIC (فيلق الجيش الملكي الميداني) ---
+    applyFormationPositions(forceReset = false) {
+      if (!this.allies || this.allies.length === 0) return;
+      const count = this.allies.length;
+      const w = this.width;
+      const h = this.height;
+
+      this.allies.forEach((ally, idx) => {
+        if (ally.customPositioned && !forceReset) return;
+
+        let targetX = w * 0.38;
+        let targetY = h * 0.50;
+
+        if (this.currentFormation === "front_wall") {
+          // Frontline defensive wall: vertical line defending the road corridor
+          const rank = Math.floor(idx / 5);
+          const rowInRank = idx % 5;
+          const rankCount = Math.min(count - rank * 5, 5);
+          const rankSpread = Math.min(h * 0.28, Math.max(60, (rankCount - 1) * 28));
+          const rankStartY = h * 0.50 - rankSpread / 2;
+          const rankStepY = rankCount > 1 ? rankSpread / (rankCount - 1) : 0;
+
+          targetX = w * (0.38 - rank * 0.05);
+          targetY = rankStartY + rowInRank * rankStepY;
+        } else if (this.currentFormation === "flank_guard") {
+          // Two wings guarding upper and lower flanks
+          if (idx === 0) {
+            targetX = w * 0.42;
+            targetY = h * 0.50;
+          } else {
+            const isUpper = idx % 2 === 1;
+            const flankIdx = Math.floor((idx - 1) / 2);
+            const flankSpreadX = flankIdx * 28;
+            const flankSpreadY = flankIdx * 16;
+            targetX = w * 0.36 + flankSpreadX;
+            targetY = isUpper ? (h * 0.40 - flankSpreadY) : (h * 0.60 + flankSpreadY);
+          }
+        } else if (this.currentFormation === "wedge_assault") {
+          // V-shaped wedge pointing into enemy forces
+          if (idx === 0) {
+            targetX = w * 0.48;
+            targetY = h * 0.50;
+          } else {
+            const isUpper = idx % 2 === 1;
+            const rank = Math.floor((idx + 1) / 2);
+            targetX = w * 0.48 - rank * (w * 0.035);
+            targetY = h * 0.50 + (isUpper ? -1 : 1) * (rank * (h * 0.045));
+          }
+        }
+
+        ally.targetX = Math.max(w * 0.28, Math.min(w * 0.75, targetX));
+        ally.targetY = Math.max(h * 0.35, Math.min(h * 0.65, targetY));
+        if (forceReset) {
+          ally.customPositioned = false;
+        }
+      });
+    }
+
+    toggleFormation() {
+      const formations = ["front_wall", "flank_guard", "wedge_assault"];
+      const currentIdx = formations.indexOf(this.currentFormation);
+      const nextIdx = (currentIdx + 1) % formations.length;
+      this.currentFormation = formations[nextIdx];
+
+      const iconEl = document.getElementById("formation-icon");
+      const labelEl = document.getElementById("formation-label");
+      const dict = I18N[this.lang];
+
+      let labelText = "";
+      let icon = "🛡️";
+
+      if (this.currentFormation === "front_wall") {
+        icon = "🛡️";
+        labelText = dict.formationFront || (this.lang === "ar" ? "تشكيل: جدار أمامي" : "Formation: Front Wall");
+      } else if (this.currentFormation === "flank_guard") {
+        icon = "⚔️";
+        labelText = dict.formationFlank || (this.lang === "ar" ? "تشكيل: حماية جانبية" : "Formation: Flank Guard");
+      } else if (this.currentFormation === "wedge_assault") {
+        icon = "⚡";
+        labelText = dict.formationWedge || (this.lang === "ar" ? "تشكيل: هجوم الوتد" : "Formation: Wedge Assault");
+      }
+
+      if (iconEl) iconEl.textContent = icon;
+      if (labelEl) labelEl.textContent = labelText;
+
+      this.sound.play("guard_horn");
+      this.applyFormationPositions(true);
+
+      // Visual feedback
+      this.createFloatingText(labelText, this.width * 0.42, this.height * 0.48, "#2ecc71", 1.3);
+      this.createShockwave(this.width * 0.40, this.height * 0.50, "#2ecc71", 75, 0.35, 3);
+    }
+
+    recruitUnit(uType) {
+      const tmpl = ALLIED_UNIT_TYPES[uType];
+      if (!tmpl) return;
+
+      if (this.gold < tmpl.cost) {
+        this.sound.play("error");
+        this.createFloatingText(this.lang === "ar" ? "الذهب غير كافٍ! 🪙" : "Not enough gold!", this.width * 0.45, this.height * 0.50, "#e74c3c", 1.1);
+        return;
+      }
+
+      this.gold -= tmpl.cost;
+
+      // Drawbridge spawn point
+      const spawnX = this.width * 0.285;
+      const spawnY = this.height * 0.50 + (Math.random() - 0.5) * 35;
+
+      const ally = {
+        id: "ally_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+        type: uType,
+        nameAr: tmpl.nameAr,
+        nameEn: tmpl.nameEn,
+        icon: tmpl.icon,
+        hp: tmpl.hp,
+        maxHp: tmpl.hp,
+        damage: tmpl.damage,
+        speed: tmpl.speed,
+        baseSpeed: tmpl.speed,
+        range: tmpl.range,
+        attackInterval: tmpl.attackInterval,
+        attackCooldown: 0.2,
+        radius: tmpl.radius,
+        isRanged: tmpl.isRanged || false,
+        aoe: tmpl.aoe || 0,
+        color: tmpl.color,
+        x: spawnX,
+        y: spawnY,
+        targetX: spawnX + 40,
+        targetY: spawnY,
+        customPositioned: false,
+        isSelected: false,
+        hitAnim: 0,
+        attackAnim: 0,
+        walkPhase: Math.random() * Math.PI * 2,
+        inCombat: false,
+        currentTarget: null,
+        clashCooldown: 0
+      };
+
+      this.allies.push(ally);
+      this.applyFormationPositions();
+
+      this.sound.play("guard_horn");
+      this.createShockwave(spawnX, spawnY, tmpl.color, 45, 0.3, 2.5);
+
+      for (let i = 0; i < 10; i++) {
+        this.particles.push({
+          type: "spark",
+          x: spawnX + (Math.random() - 0.5) * 12,
+          y: spawnY + (Math.random() - 0.5) * 12,
+          vx: 40 + Math.random() * 60,
+          vy: (Math.random() - 0.5) * 70,
+          drag: 0.93,
+          life: 0.28,
+          maxLife: 0.28,
+          color: "#f1c40f",
+          size: 3
+        });
+      }
+
+      const unitName = this.lang === "ar" ? tmpl.nameAr : tmpl.nameEn;
+      this.createFloatingText(`+${tmpl.icon} ${unitName}!`, spawnX + 15, spawnY - 24, "#2ecc71", 1.25);
+
+      this.updateHUD();
+    }
+
+    createClashParticles(x, y, attackerColor, defenderColor, isCrit = false, clashType = "melee") {
+      // 1. Tactile Screen Micro-shake
+      this.shakeScreen(isCrit ? 3.5 : 1.4, isCrit ? 0.2 : 0.08);
+
+      // 2. High-speed ricochet sparks
+      const sparkCount = isCrit ? 14 : 8;
+      for (let i = 0; i < sparkCount; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 70 + Math.random() * 140;
+        this.particles.push({
+          type: "spark",
+          x: x + (Math.random() - 0.5) * 6,
+          y: y + (Math.random() - 0.5) * 6,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          drag: 0.91,
+          life: 0.18 + Math.random() * 0.15,
+          maxLife: 0.33,
+          color: Math.random() > 0.4 ? "#f1c40f" : "#ffffff",
+          size: 2.5 + Math.random() * 2.5
+        });
+      }
+
+      // 3. Radiant impact shockwave
+      this.createShockwave(x, y, isCrit ? "#ff3838" : (attackerColor || "#f1c40f"), isCrit ? 55 : 32, 0.22, 2.2);
+
+      // 4. Ground combat dust / smoke puffs
+      for (let i = 0; i < 3; i++) {
+        this.particles.push({
+          type: "smoke",
+          x: x + (Math.random() - 0.5) * 10,
+          y: y + 8,
+          vx: (Math.random() - 0.5) * 20,
+          vy: -10 - Math.random() * 15,
+          life: 0.25 + Math.random() * 0.15,
+          maxLife: 0.4,
+          color: "rgba(149, 165, 166, 0.45)",
+          size: 5,
+          growth: 10
+        });
+      }
+
+      // 5. Splatter droplets (blood / ichor / aura)
+      const splatterColor = defenderColor || "#e74c3c";
+      for (let i = 0; i < 4; i++) {
+        this.particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 90,
+          vy: (Math.random() - 0.5) * 90,
+          gravity: 190,
+          life: 0.25,
+          maxLife: 0.25,
+          color: splatterColor,
+          size: 2.2
+        });
+      }
+
+      // 6. Sound
+      if (isCrit) {
+        this.sound.play("guard_block");
+      } else {
+        this.sound.play("hit");
+      }
+    }
+
+    updateAllies(dt) {
+      if (!this.allies || this.allies.length === 0) return;
+
+      const w = this.width;
+      const h = this.height;
+
+      for (let i = this.allies.length - 1; i >= 0; i--) {
+        const ally = this.allies[i];
+
+        // If ally HP depleted
+        if (ally.hp <= 0) {
+          this.sound.play("hit");
+          this.createShockwave(ally.x, ally.y, "#e74c3c", 40, 0.25, 2.0);
+          for (let p = 0; p < 12; p++) {
+            this.particles.push({
+              type: "debris",
+              x: ally.x,
+              y: ally.y,
+              vx: (Math.random() - 0.5) * 80,
+              vy: -30 - Math.random() * 60,
+              gravity: 220,
+              drag: 0.94,
+              life: 0.35 + Math.random() * 0.2,
+              maxLife: 0.55,
+              color: ally.color,
+              size: 3 + Math.random() * 3
+            });
+          }
+          this.createFloatingText("FALLEN ⚔️", ally.x, ally.y - 18, "#e74c3c", 1.0);
+          this.allies.splice(i, 1);
+          this.updateHUD();
+          continue;
+        }
+
+        // Decay animations
+        if (ally.hitAnim > 0) ally.hitAnim = Math.max(0, ally.hitAnim - dt * 4.5);
+        if (ally.attackAnim > 0) ally.attackAnim = Math.max(0, ally.attackAnim - dt * 4.0);
+        if (ally.attackCooldown > 0) ally.attackCooldown -= dt;
+        if (ally.clashCooldown > 0) ally.clashCooldown -= dt;
+
+        // Skip movement if user is actively dragging this ally
+        if (this.draggingAlly === ally) continue;
+
+        // Autonomous enemy target acquisition (Request 5)
+        let targetEnemy = null;
+        let minDist = Infinity;
+        const aggroRadius = ally.type === "cavalier" ? 340 : (ally.isRanged ? 280 : 250);
+
+        for (const e of this.enemies) {
+          if (e.hp <= 0) continue;
+          const d = Math.hypot(e.x - ally.x, e.y - ally.y);
+          const enemyNearDefense = e.x < w * 0.78 && Math.abs(e.y - ally.y) < 140;
+          if (d <= aggroRadius || enemyNearDefense) {
+            if (d < minDist) {
+              minDist = d;
+              targetEnemy = e;
+            }
+          }
+        }
+
+        if (targetEnemy) {
+          ally.currentTarget = targetEnemy;
+          const dx = targetEnemy.x - ally.x;
+          const dy = targetEnemy.y - ally.y;
+          const dist = Math.hypot(dx, dy);
+
+          // Check if within attack range
+          if (dist <= ally.range) {
+            ally.inCombat = true;
+
+            if (ally.attackCooldown <= 0) {
+              ally.attackCooldown = ally.attackInterval;
+              ally.attackAnim = 1.0;
+
+              if (ally.isRanged) {
+                if (ally.type === "archer") {
+                  this.sound.play("arrow");
+                  this.projectiles.push({
+                    type: "arrow",
+                    x: ally.x,
+                    y: ally.y,
+                    target: targetEnemy,
+                    targetX: targetEnemy.x,
+                    targetY: targetEnemy.y,
+                    speed: 620,
+                    damage: ally.damage,
+                    color: "#2ecc71"
+                  });
+                } else if (ally.type === "war_chariot") {
+                  this.sound.play("cannon");
+                  this.projectiles.push({
+                    type: "cannonball",
+                    x: ally.x,
+                    y: ally.y,
+                    targetX: targetEnemy.x,
+                    targetY: targetEnemy.y,
+                    damage: ally.damage,
+                    speed: 460,
+                    aoe: ally.aoe || 70,
+                    color: "#e67e22"
+                  });
+                }
+              } else {
+                const isCrit = Math.random() < 0.25;
+                const finalDmg = isCrit ? Math.floor(ally.damage * 1.5) : ally.damage;
+
+                this.damageEnemy(targetEnemy, finalDmg, "physical", ally.color, true);
+
+                const clashX = (ally.x + targetEnemy.x) / 2;
+                const clashY = (ally.y + targetEnemy.y) / 2;
+                this.createClashParticles(clashX, clashY, ally.color, targetEnemy.color || "#e74c3c", isCrit, "melee");
+
+                if (isCrit) {
+                  this.createFloatingText(`💥 ${finalDmg}`, targetEnemy.x, targetEnemy.y - 20, "#f39c12", 1.15);
+                }
+
+                if (ally.type === "cavalier") {
+                  targetEnemy.x = Math.min(w * 0.95, targetEnemy.x + 12);
+                  this.shakeScreen(2.2, 0.12);
+                }
+              }
+            }
+          } else {
+            // Move automatically towards nearest enemy
+            ally.inCombat = false;
+            const moveSpeed = ally.speed * (ally.type === "cavalier" ? 1.25 : 1.0);
+            ally.x += (dx / dist) * moveSpeed * dt;
+            ally.y += (dy / dist) * moveSpeed * dt;
+            ally.walkPhase += dt * 8.0;
+
+            if (Math.random() < 0.15) {
+              this.particles.push({
+                type: "smoke",
+                x: ally.x + (Math.random() - 0.5) * 8,
+                y: ally.y + ally.radius * 0.6,
+                vx: -(dx / dist) * 15,
+                vy: -10,
+                life: 0.18,
+                maxLife: 0.18,
+                color: "rgba(189, 195, 199, 0.35)",
+                size: 3
+              });
+            }
+          }
+        } else {
+          // No enemies in range: return smoothly to formation target
+          ally.currentTarget = null;
+          ally.inCombat = false;
+
+          const destX = ally.targetX || (w * 0.38);
+          const destY = ally.targetY || (h * 0.50);
+          const returnDx = destX - ally.x;
+          const returnDy = destY - ally.y;
+          const returnDist = Math.hypot(returnDx, returnDy);
+
+          if (returnDist > 6) {
+            const returnSpeed = ally.speed * 0.85;
+            ally.x += (returnDx / returnDist) * returnSpeed * dt;
+            ally.y += (returnDy / returnDist) * returnSpeed * dt;
+            ally.walkPhase += dt * 5.0;
+          }
+        }
+
+        // Close-quarters enemy melee collision
+        for (const enemy of this.enemies) {
+          if (enemy.hp <= 0 || enemy.flying) continue;
+          const contactDist = Math.hypot(enemy.x - ally.x, enemy.y - ally.y);
+          if (contactDist <= 38) {
+            if (ally.clashCooldown <= 0) {
+              ally.clashCooldown = 0.8;
+              const enemyDmg = Math.max(8, Math.floor(enemy.damageToCastle * 0.45));
+              const mitigatedDmg = ally.type === "paladin" ? Math.floor(enemyDmg * 0.65) : enemyDmg;
+
+              ally.hp = Math.max(0, ally.hp - mitigatedDmg);
+              ally.hitAnim = 1.0;
+
+              const midX = (ally.x + enemy.x) / 2;
+              const midY = (ally.y + enemy.y) / 2;
+              this.createClashParticles(midX, midY, enemy.color || "#e74c3c", ally.color, false, "defend");
+              this.createFloatingText(`-${mitigatedDmg}`, ally.x, ally.y - 18, "#e74c3c", 0.95);
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    renderAllies() {
+      if (!this.allies || this.allies.length === 0) return;
+
+      const isAr = this.lang === "ar";
+      const ctx = this.ctx;
+
+      this.allies.forEach(a => {
+        const x = a.x;
+        const y = a.y;
+        const isHit = a.hitAnim > 0.1;
+        const isAttacking = a.attackAnim > 0.1;
+        const hpPct = Math.max(0, Math.min(1, a.hp / a.maxHp));
+
+        ctx.save();
+
+        // 1. Selection / Drag reticle & Tether line to anchor
+        if (a.isSelected || this.draggingAlly === a) {
+          ctx.strokeStyle = "rgba(52, 152, 219, 0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(a.targetX || x, a.targetY || y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = "rgba(52, 152, 219, 0.15)";
+          ctx.beginPath();
+          ctx.arc(x, y, a.radius + 12, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "#3498db";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y, a.radius + 8, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+          ctx.beginPath();
+          ctx.ellipse(x, y + a.radius * 0.7, a.radius * 0.9, a.radius * 0.45, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const walkBob = Math.sin(a.walkPhase || 0) * 2;
+        const attackLunge = isAttacking ? 8 : 0;
+
+        if (isHit) {
+          ctx.filter = "brightness(1.8) drop-shadow(0 0 6px #ff7675)";
+        }
+
+        if (a.type === "swordsman") {
+          // --- ROYAL SWORDSMAN ---
+          ctx.fillStyle = "#2c3e50";
+          ctx.fillRect(x - 5, y + 4 + walkBob, 4, 8);
+          ctx.fillRect(x + 1, y + 4 - walkBob, 4, 8);
+
+          ctx.fillStyle = "#2980b9";
+          ctx.fillRect(x - 6, y - 6, 12, 11);
+          ctx.fillStyle = "#bdc3c7";
+          ctx.fillRect(x - 5, y - 5, 10, 8);
+
+          ctx.fillStyle = "#7f8c8d";
+          ctx.beginPath();
+          ctx.arc(x, y - 10, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#e74c3c";
+          ctx.beginPath();
+          ctx.ellipse(x - 2, y - 16, 2.5, 5, -0.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#2c3e50";
+          ctx.strokeStyle = "#f1c40f";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(x + 4, y - 7);
+          ctx.lineTo(x + 11, y - 7);
+          ctx.lineTo(x + 11, y + 5);
+          ctx.lineTo(x + 7, y + 10);
+          ctx.lineTo(x + 4, y + 5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = "#ecf0f1";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(x - 2, y);
+          ctx.lineTo(x + 12 + attackLunge, y - 4);
+          ctx.stroke();
+        } else if (a.type === "archer") {
+          // --- ROYAL ARCHER ---
+          ctx.fillStyle = "#27ae60";
+          ctx.fillRect(x - 4, y + 4 + walkBob, 3.5, 7);
+          ctx.fillRect(x + 1, y + 4 - walkBob, 3.5, 7);
+
+          ctx.fillStyle = "#2ecc71";
+          ctx.fillRect(x - 5, y - 6, 10, 10);
+
+          ctx.fillStyle = "#27ae60";
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "#8b5a2b";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x + 6 + (isAttacking ? 2 : 0), y - 2, 9, -Math.PI * 0.45, Math.PI * 0.45);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x + 6, y - 10);
+          ctx.lineTo(x + 6 - (isAttacking ? 4 : 0), y - 2);
+          ctx.lineTo(x + 6, y + 6);
+          ctx.stroke();
+        } else if (a.type === "paladin") {
+          // --- HEAVY PALADIN ---
+          ctx.fillStyle = "#bdc3c7";
+          ctx.fillRect(x - 7, y + 5 + walkBob, 5, 9);
+          ctx.fillRect(x + 2, y + 5 - walkBob, 5, 9);
+
+          ctx.fillStyle = "#f1c40f";
+          ctx.fillRect(x - 8, y - 8, 16, 14);
+          ctx.fillStyle = "#ecf0f1";
+          ctx.fillRect(x - 6, y - 6, 12, 10);
+
+          ctx.fillStyle = "#bdc3c7";
+          ctx.beginPath();
+          ctx.arc(x, y - 12, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#f1c40f";
+          ctx.beginPath();
+          ctx.moveTo(x - 6, y - 16);
+          ctx.lineTo(x - 12, y - 22);
+          ctx.lineTo(x - 6, y - 12);
+          ctx.moveTo(x + 6, y - 16);
+          ctx.lineTo(x + 12, y - 22);
+          ctx.lineTo(x + 6, y - 12);
+          ctx.fill();
+
+          ctx.fillStyle = "#2c3e50";
+          ctx.strokeStyle = "#f1c40f";
+          ctx.lineWidth = 2;
+          ctx.fillRect(x + 6, y - 12, 7, 20);
+          ctx.strokeRect(x + 6, y - 12, 7, 20);
+          ctx.fillStyle = "#f1c40f";
+          ctx.fillRect(x + 8.5, y - 9, 2, 14);
+          ctx.fillRect(x + 6.5, y - 4, 6, 2);
+
+          ctx.strokeStyle = "#95a5a6";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y + 2);
+          ctx.lineTo(x + 14 + attackLunge, y - 10);
+          ctx.stroke();
+          ctx.fillStyle = "#7f8c8d";
+          ctx.fillRect(x + 12 + attackLunge, y - 14, 6, 8);
+        } else if (a.type === "cavalier") {
+          // --- ROYAL CAVALIER ---
+          ctx.fillStyle = "#6d4c41";
+          ctx.beginPath();
+          ctx.ellipse(x, y + 2, 16, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#8e44ad";
+          ctx.fillRect(x - 8, y - 4, 16, 9);
+          ctx.strokeStyle = "#f1c40f";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 8, y - 4, 16, 9);
+
+          ctx.fillStyle = "#5d4037";
+          ctx.beginPath();
+          ctx.moveTo(x + 10, y);
+          ctx.lineTo(x + 18, y - 8);
+          ctx.lineTo(x + 22, y - 4);
+          ctx.lineTo(x + 15, y + 4);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = "#4e342e";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(x - 10, y + 6);
+          ctx.lineTo(x - 14 + walkBob * 2, y + 15);
+          ctx.moveTo(x + 8, y + 6);
+          ctx.lineTo(x + 12 - walkBob * 2, y + 15);
+          ctx.stroke();
+
+          ctx.fillStyle = "#bdc3c7";
+          ctx.fillRect(x - 5, y - 12, 10, 9);
+          ctx.beginPath();
+          ctx.arc(x, y - 16, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "#d35400";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y - 6);
+          ctx.lineTo(x + 28 + attackLunge, y - 12);
+          ctx.stroke();
+          ctx.fillStyle = "#e74c3c";
+          ctx.beginPath();
+          ctx.moveTo(x + 22 + attackLunge, y - 12);
+          ctx.lineTo(x + 12 + attackLunge, y - 18);
+          ctx.lineTo(x + 14 + attackLunge, y - 12);
+          ctx.closePath();
+          ctx.fill();
+        } else if (a.type === "war_chariot") {
+          // --- WAR MACHINE CHARIOT ---
+          ctx.fillStyle = "#795548";
+          ctx.fillRect(x - 16, y - 8, 32, 16);
+          ctx.strokeStyle = "#2c3e50";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - 16, y - 8, 32, 16);
+
+          ctx.fillStyle = "#95a5a6";
+          ctx.beginPath();
+          ctx.moveTo(x + 16, y - 6);
+          ctx.lineTo(x + 25 + attackLunge, y);
+          ctx.lineTo(x + 16, y + 6);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = "#34495e";
+          ctx.fillRect(x - 4, y - 14, 18 + attackLunge, 7);
+          ctx.fillStyle = "#1a252f";
+          ctx.fillRect(x + 13 + attackLunge, y - 15, 3, 9);
+
+          ctx.fillStyle = "#2c3e50";
+          ctx.beginPath();
+          ctx.arc(x - 10, y + 8, 6, 0, Math.PI * 2);
+          ctx.arc(x + 10, y + 8, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#bdc3c7";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        ctx.filter = "none";
+
+        // Overhead HP Bar
+        const barW = Math.max(26, a.radius * 2);
+        const barH = 4;
+        const barX = x - barW / 2;
+        const barY = y - a.radius - 12;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+        const hpColor = hpPct > 0.5 ? "#2ecc71" : (hpPct > 0.25 ? "#f39c12" : "#e74c3c");
+        ctx.fillStyle = hpColor;
+        ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+        // Unit Title Badge
+        ctx.fillStyle = "#ecf0f1";
+        ctx.font = "bold 8px 'Tajawal', sans-serif";
+        ctx.textAlign = "center";
+        const unitLabel = isAr ? a.nameAr : a.nameEn;
+        ctx.fillText(`${a.icon} ${unitLabel}`, x, barY - 3);
+
+        ctx.restore();
+      });
+    }
+
     // --- WAVE GENERATOR & BOSS WAVES ---
     getBossForWave(wave) {
       if (wave % 5 !== 0) return null;
@@ -4511,6 +5825,9 @@
       // Update Royal Guards
       this.updateGuards(dt);
 
+      // Update Royal Field Army
+      this.updateAllies(dt);
+
       // Periodically refresh HUD
       this.updateHUD();
     }
@@ -4615,27 +5932,40 @@
 
         if (e.hp <= 0) continue;
 
+        // Check if an ally is directly blocking this enemy in frontline melee combat
+        let blockedByAlly = false;
+        if (this.allies && this.allies.length > 0 && !e.flying) {
+          for (const a of this.allies) {
+            if (a.hp > 0 && Math.hypot(a.x - e.x, a.y - e.y) <= 38) {
+              blockedByAlly = true;
+              break;
+            }
+          }
+        }
+
         // Path Waypoint Navigation
         if (!e.reachedCastle) {
-          const wp = e.waypoints[e.currentWpIdx];
-          if (wp) {
-            const targetX = wp.rx * this.width + (e.flying ? 0 : e.jitterX);
-            const targetY = wp.ry * this.height + (e.flying ? 0 : e.jitterY);
-            const dx = targetX - e.x;
-            const dy = targetY - e.y;
-            const dist = Math.hypot(dx, dy);
+          if (!blockedByAlly) {
+            const wp = e.waypoints[e.currentWpIdx];
+            if (wp) {
+              const targetX = wp.rx * this.width + (e.flying ? 0 : e.jitterX);
+              const targetY = wp.ry * this.height + (e.flying ? 0 : e.jitterY);
+              const dx = targetX - e.x;
+              const dy = targetY - e.y;
+              const dist = Math.hypot(dx, dy);
 
-            if (dist < Math.max(12, e.speed * dt)) {
-              e.currentWpIdx++;
-              if (e.currentWpIdx >= e.waypoints.length) {
-                e.reachedCastle = true;
+              if (dist < Math.max(12, e.speed * dt)) {
+                e.currentWpIdx++;
+                if (e.currentWpIdx >= e.waypoints.length) {
+                  e.reachedCastle = true;
+                }
+              } else {
+                e.x += (dx / dist) * e.speed * dt;
+                e.y += (dy / dist) * e.speed * dt;
               }
             } else {
-              e.x += (dx / dist) * e.speed * dt;
-              e.y += (dy / dist) * e.speed * dt;
+              e.reachedCastle = true;
             }
-          } else {
-            e.reachedCastle = true;
           }
         }
 
@@ -5847,7 +7177,12 @@
       this.groundHazards = [];
       this.enemiesDefeatedCount = 0;
       this.guards = [];
+      this.allies = [];
+      this.draggingAlly = null;
       this.spellCooldowns.guard = 0;
+      this.closeWarDrawer();
+      this.selectedShopWeapon = null;
+      this.closePlacementGuide();
 
       // Clear towers
       this.towers = [];
@@ -5873,6 +7208,7 @@
       this.renderGuards();
       this.renderSlots();
       this.renderTowers();
+      this.renderAllies();
       this.renderEnemies();
       this.renderProjectiles();
       this.renderParticles();
@@ -5891,121 +7227,208 @@
       const w = this.width;
       const h = this.height;
 
-      // Dark moody fantasy terrain gradient
-      const bgGrad = this.ctx.createLinearGradient(0, 0, w, h);
-      bgGrad.addColorStop(0, "#0e141d");
-      bgGrad.addColorStop(0.35, "#131a24");
-      bgGrad.addColorStop(1, "#0a0f16");
+      // 1. Natural Medieval Terrain (مروج وتربة ميدان المعركة الطبيعية)
+      const bgGrad = this.ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, "#193524");
+      bgGrad.addColorStop(0.25, "#224730");
+      bgGrad.addColorStop(0.5, "#284f36");
+      bgGrad.addColorStop(0.75, "#21442e");
+      bgGrad.addColorStop(1, "#183222");
       this.ctx.fillStyle = bgGrad;
       this.ctx.fillRect(0, 0, w, h);
 
-      // Render Each of the 4 Battlefield Intertwining Paths
-      BATTLEFIELD_PATHS.forEach((pathObj) => {
-        const wps = pathObj.waypoints;
-        if (!wps || wps.length < 2) return;
-
-        // 1. Path Outer Dirt Foundation (Wide dark footprint)
-        this.ctx.strokeStyle = "rgba(16, 22, 32, 0.9)";
-        this.ctx.lineWidth = 38;
-        this.ctx.lineCap = "round";
-        this.ctx.lineJoin = "round";
-        this.ctx.beginPath();
-        this.ctx.moveTo(wps[0].rx * w, wps[0].ry * h);
-        for (let i = 1; i < wps.length; i++) {
-          this.ctx.lineTo(wps[i].rx * w, wps[i].ry * h);
+      // Subtle grass tufts and field terrain variation
+      this.ctx.fillStyle = "rgba(38, 77, 52, 0.4)";
+      for (let i = 0; i < 24; i++) {
+        const gx = ((i * 137) % w);
+        const gy = ((i * 89) % h);
+        if (gy < h * 0.35 || gy > h * 0.65) {
+          this.ctx.beginPath();
+          this.ctx.ellipse(gx, gy, 18, 8, 0, 0, Math.PI * 2);
+          this.ctx.fill();
         }
-        this.ctx.stroke();
+      }
 
-        // 2. Packed Road Dirt & Stone Cobble Layer
-        this.ctx.strokeStyle = "rgba(42, 54, 72, 0.75)";
-        this.ctx.lineWidth = 26;
-        this.ctx.beginPath();
-        this.ctx.moveTo(wps[0].rx * w, wps[0].ry * h);
-        for (let i = 1; i < wps.length; i++) {
-          this.ctx.lineTo(wps[i].rx * w, wps[i].ry * h);
-        }
-        this.ctx.stroke();
+      // 2. Wide Natural Military Highway (طريق عسكري ترابي وحجري طبيعي وأنيق)
+      // Layer A: Wide Earth / Soil Shoulder (كتف الطريق والتربة المحيطة)
+      this.ctx.strokeStyle = "#5d4037";
+      this.ctx.lineWidth = 100;
+      this.ctx.lineCap = "round";
+      this.ctx.lineJoin = "round";
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.50);
+      this.ctx.lineTo(w * 0.75, h * 0.50);
+      this.ctx.lineTo(w * 0.50, h * 0.50);
+      this.ctx.lineTo(w * 0.285, h * 0.50);
+      this.ctx.stroke();
 
-        // 3. Inner Wagon Wheel Tread Line
-        this.ctx.strokeStyle = "rgba(25, 33, 46, 0.6)";
-        this.ctx.lineWidth = 14;
-        this.ctx.beginPath();
-        this.ctx.moveTo(wps[0].rx * w, wps[0].ry * h);
-        for (let i = 1; i < wps.length; i++) {
-          this.ctx.lineTo(wps[i].rx * w, wps[i].ry * h);
-        }
-        this.ctx.stroke();
+      // Layer B: Packed Clay, Gravel & Sandy Earth Layer (جسم الطريق الرئيسي من الحصى والتربة الممهدة)
+      this.ctx.strokeStyle = "#8d6e63";
+      this.ctx.lineWidth = 80;
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.50);
+      this.ctx.lineTo(w * 0.75, h * 0.50);
+      this.ctx.lineTo(w * 0.50, h * 0.50);
+      this.ctx.lineTo(w * 0.285, h * 0.50);
+      this.ctx.stroke();
 
-        // 4. Subtle Marching Direction Dashes
-        this.ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([8, 18]);
-        this.ctx.beginPath();
-        this.ctx.moveTo(wps[0].rx * w, wps[0].ry * h);
-        for (let i = 1; i < wps.length; i++) {
-          this.ctx.lineTo(wps[i].rx * w, wps[i].ry * h);
-        }
-        this.ctx.stroke();
-        this.ctx.setLineDash([]);
-      });
+      // Layer C: Compacted Stone & Silt Center (طبقة السطح الحجرية الدافئة)
+      this.ctx.strokeStyle = "#a1887f";
+      this.ctx.lineWidth = 58;
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.50);
+      this.ctx.lineTo(w * 0.75, h * 0.50);
+      this.ctx.lineTo(w * 0.50, h * 0.50);
+      this.ctx.lineTo(w * 0.285, h * 0.50);
+      this.ctx.stroke();
 
-      // Central Crossroads Paved Cobblestone Plazas (Strategic Path Intersections)
-      const intersections = [
-        { rx: 0.52, ry: 0.40, radius: 24 }, // North Crossroad
-        { rx: 0.52, ry: 0.50, radius: 28 }, // Central King's Crossroads
-        { rx: 0.68, ry: 0.28, radius: 22 }, // Ridge Intersection
-        { rx: 0.38, ry: 0.66, radius: 22 }  // Southern Marsh Intersection
+      // Layer D: Cobblestone Paving Core (رصف الحجارة القديمة في قلب الطريق)
+      this.ctx.strokeStyle = "#bcaaa4";
+      this.ctx.lineWidth = 36;
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.50);
+      this.ctx.lineTo(w * 0.75, h * 0.50);
+      this.ctx.lineTo(w * 0.50, h * 0.50);
+      this.ctx.lineTo(w * 0.285, h * 0.50);
+      this.ctx.stroke();
+
+      // Layer E: Medieval Cobblestones Texture & Flagstones (نقوش وبلاطات الحجارة الممهدة)
+      this.ctx.strokeStyle = "rgba(78, 52, 46, 0.35)";
+      this.ctx.lineWidth = 2;
+      this.ctx.setLineDash([12, 14]);
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.48);
+      this.ctx.lineTo(w * 0.285, h * 0.48);
+      this.ctx.moveTo(w * 1.05, h * 0.52);
+      this.ctx.lineTo(w * 0.285, h * 0.52);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      // Layer F: Cart Wheel Ruts (أخاديد عجلات العربات والخيول)
+      this.ctx.strokeStyle = "rgba(62, 39, 35, 0.45)";
+      this.ctx.lineWidth = 3.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.46);
+      this.ctx.lineTo(w * 0.285, h * 0.47);
+      this.ctx.moveTo(w * 1.05, h * 0.54);
+      this.ctx.lineTo(w * 0.285, h * 0.53);
+      this.ctx.stroke();
+
+      // Layer G: Stone Curbs & Borders along highway edges (أحجار حواف الطريق الجانبية)
+      this.ctx.strokeStyle = "rgba(189, 189, 189, 0.65)";
+      this.ctx.lineWidth = 3;
+      this.ctx.setLineDash([8, 10]);
+      this.ctx.beginPath();
+      this.ctx.moveTo(w * 1.05, h * 0.42);
+      this.ctx.lineTo(w * 0.35, h * 0.43);
+      this.ctx.moveTo(w * 1.05, h * 0.58);
+      this.ctx.lineTo(w * 0.35, h * 0.57);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      // 3. Grand Battle Arena Plaza (ساحة المعركة ورصف الحجارة الملكية أمام القلعة)
+      const plazaX = w * 0.38;
+      const plazaY = h * 0.50;
+      const plazaR = 48;
+
+      // Outer stone ring
+      this.ctx.fillStyle = "#6d4c41";
+      this.ctx.beginPath();
+      this.ctx.arc(plazaX, plazaY, plazaR + 6, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Paved flagstone plaza
+      this.ctx.fillStyle = "#8d6e63";
+      this.ctx.beginPath();
+      this.ctx.arc(plazaX, plazaY, plazaR, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.strokeStyle = "#d4ac0d";
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.arc(plazaX, plazaY, plazaR - 6, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Carved battle compass crest
+      this.ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(plazaX - plazaR + 10, plazaY);
+      this.ctx.lineTo(plazaX + plazaR - 10, plazaY);
+      this.ctx.moveTo(plazaX, plazaY - plazaR + 10);
+      this.ctx.lineTo(plazaX, plazaY + plazaR - 10);
+      this.ctx.stroke();
+
+      // 4. Roadside Torches & Warm Lantern Posts (أعمدة مشاعل تضيء الطريق بحرارة المعركة)
+      const torchSpots = [
+        { x: w * 0.90, y: h * 0.40 },
+        { x: w * 0.90, y: h * 0.60 },
+        { x: w * 0.70, y: h * 0.40 },
+        { x: w * 0.70, y: h * 0.60 },
+        { x: w * 0.52, y: h * 0.41 },
+        { x: w * 0.52, y: h * 0.59 }
       ];
 
-      intersections.forEach(node => {
-        const nx = node.rx * w;
-        const ny = node.ry * h;
+      torchSpots.forEach(t => {
+        // Wooden post
+        this.ctx.fillStyle = "#3e2723";
+        this.ctx.fillRect(t.x - 2.5, t.y - 12, 5, 14);
 
-        // Paved round stone plaza
-        this.ctx.fillStyle = "rgba(35, 45, 62, 0.9)";
+        // Warm torch glow
+        const glow = this.ctx.createRadialGradient(t.x, t.y - 12, 1, t.x, t.y - 12, 16);
+        glow.addColorStop(0, "rgba(255, 167, 38, 0.8)");
+        glow.addColorStop(0.5, "rgba(245, 124, 0, 0.35)");
+        glow.addColorStop(1, "rgba(230, 81, 0, 0)");
+        this.ctx.fillStyle = glow;
         this.ctx.beginPath();
-        this.ctx.arc(nx, ny, node.radius, 0, Math.PI * 2);
+        this.ctx.arc(t.x, t.y - 12, 16, 0, Math.PI * 2);
         this.ctx.fill();
 
-        this.ctx.strokeStyle = "rgba(241, 196, 15, 0.3)";
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke();
-
-        // Flagstone road pattern
-        this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+        // Fire flame core
+        this.ctx.fillStyle = "#ffeb3b";
         this.ctx.beginPath();
-        this.ctx.moveTo(nx - node.radius + 4, ny);
-        this.ctx.lineTo(nx + node.radius - 4, ny);
-        this.ctx.moveTo(nx, ny - node.radius + 4);
-        this.ctx.lineTo(nx, ny + node.radius - 4);
-        this.ctx.stroke();
-
-        // Warning Torch Post at the intersection
-        this.ctx.fillStyle = "#e67e22";
-        this.ctx.beginPath();
-        this.ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
+        this.ctx.arc(t.x, t.y - 12, 3, 0, Math.PI * 2);
         this.ctx.fill();
       });
 
-      // Castle Moat / Water Canal
+      // 5. Castle Moat / Water Canal
       const moatX = w * 0.285;
       const moatGrad = this.ctx.createLinearGradient(moatX - 25, 0, moatX + 25, 0);
-      moatGrad.addColorStop(0, "#0c2438");
-      moatGrad.addColorStop(0.5, "#1b4965");
-      moatGrad.addColorStop(1, "#0a1c2e");
+      moatGrad.addColorStop(0, "#0d2b45");
+      moatGrad.addColorStop(0.5, "#203a43");
+      moatGrad.addColorStop(1, "#0f2027");
       this.ctx.fillStyle = moatGrad;
       this.ctx.fillRect(moatX - 18, 0, 36, h);
 
-      // Wooden drawbridge across moat
-      this.ctx.fillStyle = "#5c3d2e";
-      this.ctx.fillRect(moatX - 22, h * 0.48, 44, h * 0.14);
-      this.ctx.strokeStyle = "#382319";
-      this.ctx.lineWidth = 2;
-      for (let by = h * 0.49; by < h * 0.61; by += 8) {
+      // Water ripples
+      this.ctx.strokeStyle = "rgba(79, 195, 247, 0.35)";
+      this.ctx.lineWidth = 1.5;
+      for (let y = 15; y < h; y += 30) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(moatX - 12, y);
+        this.ctx.lineTo(moatX + 12, y);
+        this.ctx.stroke();
+      }
+
+      // Wooden drawbridge across moat leading road to castle
+      this.ctx.fillStyle = "#5d4037";
+      this.ctx.fillRect(moatX - 22, h * 0.44, 44, h * 0.12);
+      this.ctx.strokeStyle = "#3e2723";
+      this.ctx.lineWidth = 2.5;
+      this.ctx.strokeRect(moatX - 22, h * 0.44, 44, h * 0.12);
+
+      // Drawbridge wooden planks & iron bolts
+      for (let by = h * 0.45; by < h * 0.56; by += 7) {
         this.ctx.beginPath();
         this.ctx.moveTo(moatX - 22, by);
         this.ctx.lineTo(moatX + 22, by);
         this.ctx.stroke();
+
+        this.ctx.fillStyle = "#ffd54f";
+        this.ctx.beginPath();
+        this.ctx.arc(moatX - 18, by, 1.5, 0, Math.PI * 2);
+        this.ctx.arc(moatX + 18, by, 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
       }
     }
 
@@ -6160,23 +7583,57 @@
         this.ctx.translate(slot.x, slot.y);
 
         if (isPlacing && !hasTower) {
-          // Highlight available building spot
-          const pulse = Math.sin(this.ambientTime * 6) * 3;
-          this.ctx.fillStyle = "rgba(46, 204, 113, 0.25)";
+          // Highlight available building spot with glowing beacon target
+          const pulse = Math.sin(this.ambientTime * 6) * 4;
+          const auraPulse = Math.sin(this.ambientTime * 4) * 6;
+
+          // 1. Outer Glowing Radar Aura
+          this.ctx.fillStyle = "rgba(0, 206, 201, 0.16)";
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, slot.radius * 1.7 + auraPulse, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // 2. Pulsing Dashed Target Border Ring
+          this.ctx.strokeStyle = "#00cec9";
+          this.ctx.lineWidth = 2.5;
+          this.ctx.setLineDash([7, 5]);
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, slot.radius * 1.35 + pulse, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+
+          // 3. Center Solid Green Target Platform
+          this.ctx.fillStyle = "rgba(46, 204, 113, 0.35)";
           this.ctx.strokeStyle = "#2ecc71";
           this.ctx.lineWidth = 2.5;
-
           this.ctx.beginPath();
-          this.ctx.arc(0, 0, slot.radius + pulse, 0, Math.PI * 2);
+          this.ctx.arc(0, 0, slot.radius, 0, Math.PI * 2);
           this.ctx.fill();
           this.ctx.stroke();
 
-          // Plus icon inside
-          this.ctx.fillStyle = "#2ecc71";
-          this.ctx.font = "bold 16px sans-serif";
+          // 4. Weapon icon preview hovering inside
+          const wpnIcon = (this.selectedShopWeapon && this.selectedShopWeapon.icon) || "🎯";
+          this.ctx.font = "18px sans-serif";
           this.ctx.textAlign = "center";
           this.ctx.textBaseline = "middle";
-          this.ctx.fillText("+", 0, 0);
+          this.ctx.fillText(wpnIcon, 0, -2);
+
+          // 5. "ضع هنا" Indicator Badge under slot
+          this.ctx.fillStyle = "rgba(10, 16, 26, 0.88)";
+          this.ctx.strokeStyle = "#00cec9";
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          if (this.ctx.roundRect) {
+            this.ctx.roundRect(-24, slot.radius + 3, 48, 14, 4);
+          } else {
+            this.ctx.rect(-24, slot.radius + 3, 48, 14);
+          }
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = "#81ecec";
+          this.ctx.font = "bold 9px sans-serif";
+          this.ctx.fillText(this.lang === "ar" ? "ضع هنا" : "Place", 0, slot.radius + 10);
         } else if (!hasTower) {
           // Idle empty mounting platform
           this.ctx.fillStyle = "rgba(16, 22, 32, 0.85)";

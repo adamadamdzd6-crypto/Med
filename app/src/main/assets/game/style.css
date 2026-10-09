@@ -52,6 +52,16 @@ html, body {
   background-color: #0d121c;
 }
 
+/* Universal Hidden Utility */
+.hidden,
+.drawer-panel.hidden,
+.shop-cards-scroll.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* ============================================================
    CANVAS
    ============================================================ */
@@ -408,7 +418,8 @@ html, body {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  left: calc(10px + var(--safe-left));
+  right: calc(10px + var(--safe-right));
+  left: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -851,53 +862,303 @@ html, body {
   z-index: 20;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.shop-title-area {
+/* War Category Bar (شريط الفئات الرئيسي: زر الأسلحة وزر الجيش) */
+.war-category-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.category-toggle-btn {
+  flex: 1;
+  max-width: 380px;
+  min-height: 50px;
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.shop-tab-group {
+/* Weapons Category Button Styling */
+.wpn-cat-btn {
+  background: linear-gradient(135deg, rgba(22, 160, 133, 0.35), rgba(41, 128, 185, 0.55));
+  border-color: rgba(0, 206, 201, 0.5);
+  color: #fff;
+}
+
+.wpn-cat-btn:hover {
+  background: linear-gradient(135deg, rgba(22, 160, 133, 0.55), rgba(41, 128, 185, 0.75));
+  border-color: #81ecec;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 206, 201, 0.4);
+}
+
+.wpn-cat-btn.active {
+  background: linear-gradient(135deg, rgba(22, 160, 133, 0.75), rgba(41, 128, 185, 0.95));
+  border-color: #00cec9;
+  box-shadow: 0 0 20px rgba(0, 206, 201, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Army Category Button Styling */
+.army-cat-btn {
+  background: linear-gradient(135deg, rgba(211, 84, 0, 0.4), rgba(192, 57, 43, 0.6));
+  border-color: rgba(230, 126, 34, 0.55);
+  color: #fff;
+}
+
+.army-cat-btn:hover {
+  background: linear-gradient(135deg, rgba(211, 84, 0, 0.65), rgba(192, 57, 43, 0.85));
+  border-color: #f39c12;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(230, 126, 34, 0.4);
+}
+
+.army-cat-btn.active {
+  background: linear-gradient(135deg, rgba(211, 84, 0, 0.8), rgba(192, 57, 43, 0.95));
+  border-color: #f39c12;
+  box-shadow: 0 0 20px rgba(230, 126, 34, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.category-toggle-btn:active {
+  transform: scale(0.97);
+}
+
+.cat-btn-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+}
+
+.cat-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.cat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+[dir="ltr"] .cat-info {
+  text-align: left;
+}
+
+.cat-title-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.45);
-  padding: 2px 4px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.shop-tab-btn {
-  background: transparent;
-  border: none;
+.cat-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.cat-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-indicator {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+[dir="ltr"] .cat-indicator {
+  margin-right: 0;
+  margin-left: 4px;
+}
+
+.category-toggle-btn.active .cat-indicator {
+  transform: rotate(180deg);
+  color: #f1c40f;
+}
+
+/* Collapsible Drawer Container */
+.war-drawer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.24s ease, margin-top 0.2s ease;
+  max-height: 280px;
+  opacity: 1;
+  overflow: visible;
+}
+
+.war-drawer-container.collapsed {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.drawer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 8px 10px;
+  animation: fadeInDrawer 0.22s ease-out;
+}
+
+.drawer-panel.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@keyframes fadeInDrawer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.drawer-hint {
+  margin: 2px 0 0 0;
+  font-size: 0.7rem;
   color: var(--text-muted);
-  font-family: inherit;
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 4px 10px;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.drawer-quick-action-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   transition: all 0.2s ease;
 }
 
-.shop-tab-btn.active {
-  background: linear-gradient(135deg, rgba(52, 152, 219, 0.35), rgba(41, 128, 185, 0.65));
-  color: #fff;
-  border: 1px solid #3498db;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+.drawer-quick-action-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #f1c40f;
+  color: #f1c40f;
 }
 
-#tab-army.active {
-  background: linear-gradient(135deg, rgba(230, 126, 34, 0.4), rgba(211, 84, 0, 0.7));
-  border-color: #e67e22;
-  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.35);
+.drawer-quick-cost {
+  color: #f1c40f;
+  font-size: 0.68rem;
+}
+
+.drawer-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-close-btn:hover {
+  background: rgba(231, 76, 60, 0.3);
+  border-color: #e74c3c;
+  color: #fff;
+  transform: rotate(90deg);
 }
 
 .army-live-badge {
@@ -908,6 +1169,33 @@ html, body {
   padding: 1px 6px;
   border-radius: 10px;
   margin-left: 2px;
+}
+
+.formation-btn {
+  background: linear-gradient(135deg, rgba(39, 174, 96, 0.35), rgba(46, 204, 113, 0.65));
+  border: 1px solid #2ecc71;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(46, 204, 113, 0.25);
+}
+
+.formation-btn:hover {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.5), rgba(39, 174, 96, 0.8));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
+}
+
+.formation-btn:active {
+  transform: scale(0.95);
 }
 
 .shop-badge {
@@ -1062,6 +1350,14 @@ html, body {
   white-space: nowrap;
 }
 
+.weapon-action-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .weapon-price {
   font-size: 0.78rem;
   font-weight: 800;
@@ -1070,6 +1366,157 @@ html, body {
   padding: 2px 6px;
   border-radius: 6px;
   white-space: nowrap;
+}
+
+.btn-card-direct-deploy {
+  background: linear-gradient(135deg, rgba(39, 174, 96, 0.8), rgba(46, 204, 113, 0.95));
+  border: 1px solid #2ecc71;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3);
+  transition: all 0.15s ease;
+}
+
+.btn-card-direct-deploy:hover {
+  background: #2ecc71;
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(46, 204, 113, 0.5);
+}
+
+.btn-card-direct-deploy:active {
+  transform: scale(0.95);
+}
+
+/* Interactive Weapon Placement Guide Banner */
+.placement-guide-banner {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, rgba(16, 26, 44, 0.95), rgba(12, 19, 34, 0.98));
+  border: 1.5px solid #00cec9;
+  border-radius: 14px;
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 35;
+  box-shadow: 0 8px 24px rgba(0, 206, 201, 0.35), 0 4px 12px rgba(0, 0, 0, 0.7);
+  animation: slideDownBanner 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+  max-width: 90vw;
+}
+
+.placement-guide-banner.hidden {
+  display: none !important;
+}
+
+@keyframes slideDownBanner {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.guide-weapon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(0, 206, 201, 0.2);
+  border: 1px solid #00cec9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.guide-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  line-height: 1.2;
+}
+
+[dir="ltr"] .guide-text-wrap {
+  text-align: left;
+}
+
+.guide-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.guide-cost {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.guide-hint {
+  font-size: 0.7rem;
+  color: #81ecec;
+}
+
+.guide-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.guide-auto-btn {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  border: 1px solid #2ecc71;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.4);
+  transition: all 0.15s ease;
+}
+
+.guide-auto-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.6);
+}
+
+.guide-cancel-btn {
+  background: rgba(192, 57, 43, 0.8);
+  border: 1px solid #e74c3c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.guide-cancel-btn:hover {
+  background: #c0392b;
 }
 
 /* Cancel Placement Button */
