@@ -1,0 +1,6 @@
+{
+  "name": "Castle Defense TD",
+  "description": "Castle Defense Tower Defense game with army recruitment, weapons drawer, particle system, and simplified castle facade.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

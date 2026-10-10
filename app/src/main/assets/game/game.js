@@ -1294,54 +1294,17 @@
     }
   };
 
-  // --- GRAND BATTLEFIELD IMPERIAL HIGHWAY LANES ---
-  // A wide, straight, unified military avenue where enemy and friendly armies march and clash head-on
+  // --- GRAND BATTLEFIELD IMPERIAL HIGHWAY (Single Wide Central Road) ---
   const BATTLEFIELD_PATHS = [
     {
-      id: "road_lane_0",
-      nameAr: "مسار الطريق الشمالي",
-      nameEn: "Upper War Highway",
+      id: "main_imperial_highway",
+      nameAr: "الطريق الإمبراطوري الرئيسي",
+      nameEn: "Main Imperial Highway",
       waypoints: [
-        { rx: 1.05, ry: 0.44 },
-        { rx: 0.82, ry: 0.44 },
-        { rx: 0.60, ry: 0.45 },
-        { rx: 0.42, ry: 0.47 },
-        { rx: 0.285, ry: 0.50 }
-      ]
-    },
-    {
-      id: "road_lane_1",
-      nameAr: "قلب الطريق الإمبراطوري",
-      nameEn: "Imperial Highway Center",
-      waypoints: [
-        { rx: 1.05, ry: 0.48 },
-        { rx: 0.82, ry: 0.48 },
-        { rx: 0.60, ry: 0.49 },
-        { rx: 0.42, ry: 0.50 },
-        { rx: 0.285, ry: 0.50 }
-      ]
-    },
-    {
-      id: "road_lane_2",
-      nameAr: "المسار الأوسط الجنوبي",
-      nameEn: "Central Highway Flank",
-      waypoints: [
-        { rx: 1.05, ry: 0.52 },
-        { rx: 0.82, ry: 0.52 },
-        { rx: 0.60, ry: 0.51 },
-        { rx: 0.42, ry: 0.50 },
-        { rx: 0.285, ry: 0.50 }
-      ]
-    },
-    {
-      id: "road_lane_3",
-      nameAr: "مسار الطريق الجنوبي",
-      nameEn: "Lower War Highway",
-      waypoints: [
-        { rx: 1.05, ry: 0.56 },
-        { rx: 0.82, ry: 0.56 },
-        { rx: 0.60, ry: 0.54 },
-        { rx: 0.42, ry: 0.52 },
+        { rx: 1.05, ry: 0.50 },
+        { rx: 0.80, ry: 0.50 },
+        { rx: 0.58, ry: 0.50 },
+        { rx: 0.40, ry: 0.50 },
         { rx: 0.285, ry: 0.50 }
       ]
     }
@@ -2457,6 +2420,7 @@
       this.updateShopCards();
       this.applyLocalization();
       this.sound.syncUI();
+      this.openWarDrawer("weapons");
     }
 
     openSettingsModal() {
@@ -3349,6 +3313,7 @@
       if (btnWpnCat) {
         this.bindTap(btnWpnCat, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.toggleWarCategory("weapons");
         });
       }
@@ -3357,6 +3322,7 @@
       if (btnArmyCat) {
         this.bindTap(btnArmyCat, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.toggleWarCategory("army");
         });
       }
@@ -3366,6 +3332,7 @@
       if (btnCloseWpn) {
         this.bindTap(btnCloseWpn, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.closeWarDrawer();
         });
       }
@@ -3374,6 +3341,7 @@
       if (btnCloseArmy) {
         this.bindTap(btnCloseArmy, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.closeWarDrawer();
         });
       }
@@ -3383,6 +3351,7 @@
       if (quickWpnBtn) {
         this.bindTap(quickWpnBtn, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.quickDeployWeapon();
         });
       }
@@ -3391,6 +3360,7 @@
       if (quickArmyBtn) {
         this.bindTap(quickArmyBtn, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.quickDeployArmy();
         });
       }
@@ -3400,6 +3370,7 @@
       if (formationBtn) {
         this.bindTap(formationBtn, (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           this.toggleFormation();
         });
       }
@@ -3408,6 +3379,7 @@
       document.querySelectorAll(".army-card").forEach(card => {
         this.bindTap(card, e => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           const uType = card.getAttribute("data-unit");
           this.recruitUnit(uType);
         });
@@ -3417,18 +3389,30 @@
       document.querySelectorAll(".btn-card-direct-deploy").forEach(btn => {
         this.bindTap(btn, e => {
           if (e && e.stopPropagation) e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           const wType = btn.getAttribute("data-weapon");
           this.deploySpecificWeapon(wType);
         });
       });
 
-      // Shop card selection (Towers deployment - direct deploy to castle)
+      // Shop card selection (Towers deployment - select/inspect weapon without immediate purchase)
       document.querySelectorAll(".weapon-card").forEach(card => {
         this.bindTap(card, e => {
           if (e && e.stopPropagation) e.stopPropagation();
           const wType = card.getAttribute("data-weapon");
           if (!wType) return;
-          this.deploySpecificWeapon(wType);
+          const template = WEAPON_TYPES[wType];
+          if (!template) return;
+
+          try { this.sound.play("click"); } catch (err) {}
+          if (this.selectedShopWeapon && this.selectedShopWeapon.id === wType) {
+            this.selectedShopWeapon = null;
+            this.closePlacementGuide();
+          } else {
+            this.selectedShopWeapon = template;
+            this.showPlacementGuide(template);
+          }
+          this.updateShopCards();
         });
       });
 
@@ -3457,11 +3441,13 @@
 
       // Start wave button
       document.getElementById("btn-start-wave").addEventListener("click", () => {
+        try { this.sound.play("click"); } catch (err) {}
         this.startNextWave();
       });
 
       // Speed button
       document.getElementById("btn-speed").addEventListener("click", () => {
+        try { this.sound.play("click"); } catch (err) {}
         if (this.speed === 1) {
           this.speed = 2;
           document.getElementById("btn-speed").textContent = "2x";
@@ -3473,6 +3459,7 @@
 
       // Sound quick mute toggle
       document.getElementById("btn-sound").addEventListener("click", () => {
+        try { this.sound.play("click"); } catch (err) {}
         this.sound.setMasterEnabled(!this.sound.enabled);
       });
 
@@ -3480,6 +3467,7 @@
       const settingsBtn = document.getElementById("btn-settings");
       if (settingsBtn) {
         settingsBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.openSettingsModal();
         });
       }
@@ -3487,6 +3475,7 @@
       const closeSettingsBtn = document.getElementById("btn-close-settings");
       if (closeSettingsBtn) {
         closeSettingsBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeSettingsModal();
         });
       }
@@ -3494,6 +3483,7 @@
       const saveSettingsBtn = document.getElementById("btn-save-settings");
       if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeSettingsModal();
         });
       }
@@ -3502,6 +3492,7 @@
       if (settingsModal) {
         settingsModal.addEventListener("click", (e) => {
           if (e.target.id === "settings-modal") {
+            try { this.sound.play("click"); } catch (err) {}
             this.closeSettingsModal();
           }
         });
@@ -3540,6 +3531,7 @@
       const playMusicBtn = document.getElementById("btn-play-music");
       if (playMusicBtn) {
         playMusicBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.sound.setMusicEnabled(true);
           this.sound.startMusic();
         });
@@ -3548,6 +3540,7 @@
       const stopMusicBtn = document.getElementById("btn-stop-music");
       if (stopMusicBtn) {
         stopMusicBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.sound.stopMusic();
         });
       }
@@ -3585,6 +3578,7 @@
       document.querySelectorAll(".test-sfx-btn").forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
+          try { this.sound.play("click"); } catch (err) {}
           const soundType = btn.getAttribute("data-sound");
           this.sound.play(soundType);
         });
@@ -3593,12 +3587,14 @@
       const resetAudioBtn = document.getElementById("btn-reset-audio");
       if (resetAudioBtn) {
         resetAudioBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.sound.resetDefaults();
         });
       }
 
       // Language toggle
       document.getElementById("btn-lang").addEventListener("click", () => {
+        try { this.sound.play("click"); } catch (err) {}
         this.lang = this.lang === "ar" ? "en" : "ar";
         this.applyLocalization();
       });
@@ -3607,6 +3603,7 @@
       const weatherBadge = document.getElementById("weather-badge");
       if (weatherBadge) {
         weatherBadge.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.openWeatherModal();
         });
       }
@@ -3614,6 +3611,7 @@
       const weatherBtn = document.getElementById("btn-weather");
       if (weatherBtn) {
         weatherBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.openWeatherModal();
         });
       }
@@ -3621,6 +3619,7 @@
       const closeWeatherBtn = document.getElementById("btn-close-weather");
       if (closeWeatherBtn) {
         closeWeatherBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeWeatherModal();
         });
       }
@@ -3628,6 +3627,7 @@
       const dismissWeatherBtn = document.getElementById("btn-dismiss-weather");
       if (dismissWeatherBtn) {
         dismissWeatherBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeWeatherModal();
         });
       }
@@ -3636,6 +3636,7 @@
       if (weatherModal) {
         weatherModal.addEventListener("click", (e) => {
           if (e.target.id === "weather-modal") {
+            try { this.sound.play("click"); } catch (err) {}
             this.closeWeatherModal();
           }
         });
@@ -3645,6 +3646,7 @@
       const bestiaryBtn = document.getElementById("btn-bestiary");
       if (bestiaryBtn) {
         bestiaryBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.openBestiaryModal();
         });
       }
@@ -3652,6 +3654,7 @@
       const closeBestiaryBtn = document.getElementById("btn-close-bestiary");
       if (closeBestiaryBtn) {
         closeBestiaryBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeBestiaryModal();
         });
       }
@@ -3659,12 +3662,14 @@
       const dismissBestiaryBtn = document.getElementById("btn-dismiss-bestiary");
       if (dismissBestiaryBtn) {
         dismissBestiaryBtn.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           this.closeBestiaryModal();
         });
       }
 
       document.querySelectorAll(".bestiary-tab").forEach(tab => {
         tab.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
           document.querySelectorAll(".bestiary-tab").forEach(t => t.classList.remove("active"));
           tab.classList.add("active");
           this.bestiaryFilter = tab.getAttribute("data-filter") || "all";
@@ -3681,37 +3686,52 @@
       }
 
       // Files viewer modal button
-      document.getElementById("btn-files").addEventListener("click", () => {
-        this.openFilesModal();
-      });
+      const btnFiles = document.getElementById("btn-files");
+      if (btnFiles) {
+        btnFiles.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
+          this.openFilesModal();
+        });
+      }
 
-      document.getElementById("btn-close-files").addEventListener("click", () => {
-        document.getElementById("files-modal").classList.add("hidden");
-      });
+      const btnCloseFiles = document.getElementById("btn-close-files");
+      if (btnCloseFiles) {
+        btnCloseFiles.addEventListener("click", () => {
+          try { this.sound.play("click"); } catch (err) {}
+          const filesModal = document.getElementById("files-modal");
+          if (filesModal) filesModal.classList.add("hidden");
+        });
+      }
 
       // Spells
-      document.getElementById("spell-repair").addEventListener("click", () => {
-        if (this.gold >= 75 && this.spellCooldowns.repair <= 0 && this.castleHp < this.castleMaxHp) {
-          this.gold -= 75;
-          this.castleHp = Math.min(this.castleMaxHp, this.castleHp + 450);
-          this.spellCooldowns.repair = 15; // 15 sec cooldown
-          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
-          this.sound.play("spell");
-          this.createRepairFX();
-          this.updateHUD();
-        }
-      });
+      const spellRepair = document.getElementById("spell-repair");
+      if (spellRepair) {
+        spellRepair.addEventListener("click", () => {
+          if (this.gold >= 75 && this.spellCooldowns.repair <= 0 && this.castleHp < this.castleMaxHp) {
+            this.gold -= 75;
+            this.castleHp = Math.min(this.castleMaxHp, this.castleHp + 450);
+            this.spellCooldowns.repair = 15; // 15 sec cooldown
+            this.spellsCastCount = (this.spellsCastCount || 0) + 1;
+            this.sound.play("spell");
+            this.createRepairFX();
+            this.updateHUD();
+          }
+        });
+      }
 
-      document.getElementById("spell-meteor").addEventListener("click", () => {
-        if (this.mana >= 40 && this.spellCooldowns.meteor <= 0) {
-          this.mana -= 40;
-          this.spellCooldowns.meteor = 20;
-          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
-          this.sound.play("spell");
-          this.castMeteorShower();
-          this.updateHUD();
-        }
-      });
+      const spellMeteor = document.getElementById("spell-meteor");
+      if (spellMeteor) {
+        spellMeteor.addEventListener("click", () => {
+          if (this.mana >= 40 && this.spellCooldowns.meteor <= 0) {
+            this.mana -= 40;
+            this.spellCooldowns.meteor = 20;
+            this.spellsCastCount = (this.spellsCastCount || 0) + 1;
+            this.sound.play("spell");
+            this.castMeteorShower();
+            this.updateHUD();
+          }
+        });
+      }
 
       const guardBtnEl = document.getElementById("spell-guard");
       if (guardBtnEl) {
@@ -3725,16 +3745,19 @@
         });
       }
 
-      document.getElementById("spell-blizzard").addEventListener("click", () => {
-        if (this.mana >= 50 && this.spellCooldowns.blizzard <= 0) {
-          this.mana -= 50;
-          this.spellCooldowns.blizzard = 25;
-          this.spellsCastCount = (this.spellsCastCount || 0) + 1;
-          this.sound.play("spell");
-          this.castBlizzard();
-          this.updateHUD();
-        }
-      });
+      const spellBlizzard = document.getElementById("spell-blizzard");
+      if (spellBlizzard) {
+        spellBlizzard.addEventListener("click", () => {
+          if (this.mana >= 50 && this.spellCooldowns.blizzard <= 0) {
+            this.mana -= 50;
+            this.spellCooldowns.blizzard = 25;
+            this.spellsCastCount = (this.spellsCastCount || 0) + 1;
+            this.sound.play("spell");
+            this.castBlizzard();
+            this.updateHUD();
+          }
+        });
+      }
 
       // Canvas pointer interactions (Click, Drag & Drop soldiers)
       this.canvas.addEventListener("pointerdown", e => {
@@ -3787,21 +3810,30 @@
       this.canvas.addEventListener("pointercancel", handlePointerUp);
 
       // Modal buttons
-      document.getElementById("btn-close-inspect").addEventListener("click", () => {
-        this.closeWeaponModal();
-      });
+      const btnCloseInspect = document.getElementById("btn-close-inspect");
+      if (btnCloseInspect) {
+        btnCloseInspect.addEventListener("click", () => {
+          this.closeWeaponModal();
+        });
+      }
 
-      document.getElementById("btn-upgrade-weapon").addEventListener("click", () => {
-        if (this.inspectingTower) {
-          this.upgradeTower(this.inspectingTower);
-        }
-      });
+      const btnUpgradeWeapon = document.getElementById("btn-upgrade-weapon");
+      if (btnUpgradeWeapon) {
+        btnUpgradeWeapon.addEventListener("click", () => {
+          if (this.inspectingTower) {
+            this.upgradeTower(this.inspectingTower);
+          }
+        });
+      }
 
-      document.getElementById("btn-sell-weapon").addEventListener("click", () => {
-        if (this.inspectingTower) {
-          this.sellTower(this.inspectingTower);
-        }
-      });
+      const btnSellWeapon = document.getElementById("btn-sell-weapon");
+      if (btnSellWeapon) {
+        btnSellWeapon.addEventListener("click", () => {
+          if (this.inspectingTower) {
+            this.sellTower(this.inspectingTower);
+          }
+        });
+      }
 
       // Priority pills
       document.querySelectorAll(".priority-pills .pill-btn").forEach(btn => {
@@ -3815,9 +3847,12 @@
       });
 
       // Restart button
-      document.getElementById("btn-restart-game").addEventListener("click", () => {
-        this.restartGame();
-      });
+      const btnRestartGame = document.getElementById("btn-restart-game");
+      if (btnRestartGame) {
+        btnRestartGame.addEventListener("click", () => {
+          this.restartGame();
+        });
+      }
 
       // Files Explorer tabs & copy / download
       document.querySelectorAll(".file-tab").forEach(tab => {
@@ -4018,6 +4053,7 @@
         if (this.inspectingTower) {
           this.closeWeaponModal();
         }
+        this.collapseWarDrawer();
       }
     }
 
@@ -4104,6 +4140,7 @@
       this.selectedShopWeapon = null;
       this.closePlacementGuide();
       this.updateShopCards();
+      this.collapseWarDrawer();
       return true;
     }
 
@@ -4617,150 +4654,236 @@
 
         this.ctx.save();
 
-        // 1. Ground Shadow & Golden Holy Aura Ring
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        // 1. Ground Shadow & Glowing Golden Holy Vanguard Aura Ring
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
         this.ctx.beginPath();
-        this.ctx.ellipse(x, y + 16, 16, 7, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(x, y + 16, 18, 8, 0, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Pulsing golden vanguard protective circle
-        const auraPulse = 0.5 + Math.sin(g.walkPhase) * 0.25;
-        this.ctx.strokeStyle = `rgba(241, 196, 15, ${auraPulse * 0.7})`;
-        this.ctx.lineWidth = 1.8;
+        const auraPulse = 0.6 + Math.sin(this.ambientTime * 5 + g.x * 0.1) * 0.3;
+        this.ctx.strokeStyle = `rgba(241, 196, 15, ${auraPulse * 0.8})`;
+        this.ctx.lineWidth = 2.2;
         this.ctx.beginPath();
-        this.ctx.arc(x, y + 2, 22, 0, Math.PI * 2);
+        this.ctx.arc(x, y + 2, 24, 0, Math.PI * 2);
         this.ctx.stroke();
 
-        // 2. Billowing Cape
-        const capeWave = Math.sin(g.walkPhase) * 4;
-        this.ctx.fillStyle = g.isCaptain ? "#c0392b" : "#2980b9";
+        // Runic glow dots around vanguard
+        for (let d = 0; d < 4; d++) {
+          const dotAngle = this.ambientTime * 2 + (d * Math.PI / 2);
+          const dx = x + Math.cos(dotAngle) * 24;
+          const dy = y + 2 + Math.sin(dotAngle) * 24;
+          this.ctx.fillStyle = "#f39c12";
+          this.ctx.beginPath();
+          this.ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // 2. Billowing Royal Cape with Gold Trim
+        const capeWave = Math.sin(g.walkPhase * 2) * 5;
+        this.ctx.fillStyle = g.isCaptain ? "#b71c1c" : "#1b4f72";
         this.ctx.beginPath();
-        this.ctx.moveTo(x - 8, y - 6);
-        this.ctx.lineTo(x - 18 + capeWave, y + 12);
-        this.ctx.lineTo(x - 8, y + 10);
+        this.ctx.moveTo(x - 6, y - 6);
+        this.ctx.lineTo(x - 20 + capeWave, y + 14);
+        this.ctx.lineTo(x - 12 + capeWave * 0.5, y + 16);
+        this.ctx.lineTo(x - 6, y + 10);
         this.ctx.closePath();
         this.ctx.fill();
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
 
-        // 3. Knight Armor Body & Legs
-        this.ctx.fillStyle = isHit ? "#ffffff" : (g.isCaptain ? "#34495e" : "#2c3e50");
+        // 3. Knight Armor Body (Polished Steel Gradient) & Pauldrons
+        const armorGrad = this.ctx.createLinearGradient(x - 8, y - 10, x + 8, y + 10);
+        armorGrad.addColorStop(0, isHit ? "#ffffff" : (g.isCaptain ? "#546e7a" : "#37474f"));
+        armorGrad.addColorStop(0.5, isHit ? "#ffebee" : (g.isCaptain ? "#37474f" : "#263238"));
+        armorGrad.addColorStop(1, isHit ? "#ffcdd2" : (g.isCaptain ? "#263238" : "#111827"));
+        this.ctx.fillStyle = armorGrad;
         this.ctx.beginPath();
         try {
           if (typeof this.ctx.roundRect === "function") {
-            this.ctx.roundRect(x - 8, y - 8, 16, 20, 4);
+            this.ctx.roundRect(x - 9, y - 9, 18, 22, 5);
           } else {
-            this.ctx.rect(x - 8, y - 8, 16, 20);
+            this.ctx.rect(x - 9, y - 9, 18, 22);
           }
         } catch (e) {
-          this.ctx.rect(x - 8, y - 8, 16, 20);
+          this.ctx.rect(x - 9, y - 9, 18, 22);
         }
         this.ctx.fill();
-
-        // Gold Trim / Royal Breastplate Inlay
-        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.strokeStyle = "#90a4ae";
         this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.moveTo(x - 5, y - 4);
-        this.ctx.lineTo(x, y + 4);
-        this.ctx.lineTo(x + 5, y - 4);
         this.ctx.stroke();
 
-        // 4. Helmet & Red Feather Plume
-        this.ctx.fillStyle = isHit ? "#ffffff" : "#7f8c8d";
+        // Golden Breastplate Filigree & Gem
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(x, y - 12, 8, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.moveTo(x - 6, y - 5);
+        this.ctx.lineTo(x, y + 5);
+        this.ctx.lineTo(x + 6, y - 5);
+        this.ctx.stroke();
 
-        // Golden Visor slit
-        this.ctx.fillStyle = "#111827";
-        this.ctx.fillRect(x - 2, y - 13, 6, 2.5);
-
-        // Feather Plume on helm
         this.ctx.fillStyle = "#e74c3c";
         this.ctx.beginPath();
-        this.ctx.ellipse(x - 3, y - 20, 3, 6, -0.3, 0, Math.PI * 2);
+        this.ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Heavy Steel Helmet & Glowing Visor & Plume
+        this.ctx.fillStyle = isHit ? "#ffffff" : "#78909c";
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - 13, 9, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.strokeStyle = "#cfd8dc";
+        this.ctx.lineWidth = 1.5;
+        this.ctx.stroke();
+
+        // Glowing Fiery/Magical Visor slit
+        this.ctx.fillStyle = g.isCaptain ? "#ff5252" : "#00e5ff";
+        this.ctx.shadowColor = g.isCaptain ? "#ff5252" : "#00e5ff";
+        this.ctx.shadowBlur = 6;
+        this.ctx.fillRect(x - 3, y - 14, 8, 3);
+        this.ctx.shadowBlur = 0;
+
+        // Majestic Red/Gold Feather Plume
+        this.ctx.fillStyle = g.isCaptain ? "#f1c40f" : "#e74c3c";
+        this.ctx.beginPath();
+        this.ctx.ellipse(x - 4, y - 22, 3.5, 7, -0.35, 0, Math.PI * 2);
         this.ctx.fill();
 
         // 5. Heavy Tower Shield (Raised toward right facing oncoming monsters)
-        const shieldHitOffset = isHit ? -3 : (isAttacking ? 3 : 0);
-        const shieldX = x + 8 + shieldHitOffset;
+        const shieldHitOffset = isHit ? -4 : (isAttacking ? 4 : 0);
+        const shieldX = x + 9 + shieldHitOffset;
         const shieldY = y;
 
         this.ctx.save();
-        this.ctx.fillStyle = isHit ? "#fff3cd" : (g.isCaptain ? "#1a252f" : "#2c3e50");
-        this.ctx.strokeStyle = isHit ? "#ffffff" : "#f1c40f";
-        this.ctx.lineWidth = 2;
+        const shieldGrad = this.ctx.createLinearGradient(shieldX - 4, shieldY - 16, shieldX + 8, shieldY + 16);
+        shieldGrad.addColorStop(0, g.isCaptain ? "#263238" : "#37474f");
+        shieldGrad.addColorStop(1, g.isCaptain ? "#0f172a" : "#1e293b");
+        this.ctx.fillStyle = shieldGrad;
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 2.5;
 
-        // Curved kite shield path
+        // Curved ornate kite shield path
         this.ctx.beginPath();
-        this.ctx.moveTo(shieldX - 2, shieldY - 14);
-        this.ctx.lineTo(shieldX + 8, shieldY - 14);
-        this.ctx.lineTo(shieldX + 8, shieldY + 6);
-        this.ctx.lineTo(shieldX + 3, shieldY + 16);
-        this.ctx.lineTo(shieldX - 2, shieldY + 6);
+        this.ctx.moveTo(shieldX - 3, shieldY - 16);
+        this.ctx.lineTo(shieldX + 9, shieldY - 16);
+        this.ctx.lineTo(shieldX + 9, shieldY + 6);
+        this.ctx.lineTo(shieldX + 3, shieldY + 18);
+        this.ctx.lineTo(shieldX - 3, shieldY + 6);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Golden Lion / Cross Crest on Shield
+        // Golden Cross & Gem on Shield
         this.ctx.strokeStyle = "#f1c40f";
-        this.ctx.lineWidth = 1.5;
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.moveTo(shieldX + 3, shieldY - 10);
-        this.ctx.lineTo(shieldX + 3, shieldY + 10);
-        this.ctx.moveTo(shieldX, shieldY - 3);
-        this.ctx.lineTo(shieldX + 6, shieldY - 3);
+        this.ctx.moveTo(shieldX + 3, shieldY - 12);
+        this.ctx.lineTo(shieldX + 3, shieldY + 12);
+        this.ctx.moveTo(shieldX - 1, shieldY - 3);
+        this.ctx.lineTo(shieldX + 7, shieldY - 3);
         this.ctx.stroke();
+
+        this.ctx.fillStyle = "#00e5ff";
+        this.ctx.beginPath();
+        this.ctx.arc(shieldX + 3, shieldY - 3, 2, 0, Math.PI * 2);
+        this.ctx.fill();
         this.ctx.restore();
 
-        // 6. Thrusting Spear / Broadsword
-        const attackThrust = isAttacking ? 16 : 0;
-        this.ctx.strokeStyle = "#ecf0f1";
-        this.ctx.lineWidth = 2.5;
+        // 6. Thrusting Greatsword / Spear with Energy Gleam
+        const attackThrust = isAttacking ? 18 : 0;
+        this.ctx.strokeStyle = "#ffffff";
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         this.ctx.moveTo(x + 2, y + 2);
-        this.ctx.lineTo(x + 20 + attackThrust, y - 2);
+        this.ctx.lineTo(x + 22 + attackThrust, y - 3);
         this.ctx.stroke();
 
-        // Sword blade tip glint
-        this.ctx.fillStyle = "#f1c40f";
+        // Sword Crossguard & Hilt
+        this.ctx.strokeStyle = "#f1c40f";
+        this.ctx.lineWidth = 2.5;
         this.ctx.beginPath();
-        this.ctx.arc(x + 20 + attackThrust, y - 2, 2.5, 0, Math.PI * 2);
+        this.ctx.moveTo(x + 1, y - 1);
+        this.ctx.lineTo(x + 5, y + 3);
+        this.ctx.stroke();
+
+        // Sword blade tip glint / energy sparkle
+        this.ctx.fillStyle = "#00e5ff";
+        this.ctx.shadowColor = "#00e5ff";
+        this.ctx.shadowBlur = 8;
+        this.ctx.beginPath();
+        this.ctx.arc(x + 22 + attackThrust, y - 3, 3.5, 0, Math.PI * 2);
         this.ctx.fill();
+        this.ctx.shadowBlur = 0;
 
         // 7. Captain's Imperial Battle Banner (if captain)
         if (g.isCaptain) {
-          const bannerWave = Math.sin(g.walkPhase * 1.5) * 5;
-          this.ctx.strokeStyle = "#795548";
-          this.ctx.lineWidth = 2.5;
+          const bannerWave = Math.sin(this.ambientTime * 4 + g.x) * 6;
+          this.ctx.strokeStyle = "#5d4037";
+          this.ctx.lineWidth = 3;
           this.ctx.beginPath();
-          this.ctx.moveTo(x - 10, y + 14);
-          this.ctx.lineTo(x - 10, y - 36);
+          this.ctx.moveTo(x - 12, y + 16);
+          this.ctx.lineTo(x - 12, y - 40);
           this.ctx.stroke();
 
-          // Banner cloth
-          this.ctx.fillStyle = "#c0392b";
+          // Banner golden top finial
+          this.ctx.fillStyle = "#f1c40f";
           this.ctx.beginPath();
-          this.ctx.moveTo(x - 10, y - 35);
-          this.ctx.lineTo(x - 28 + bannerWave, y - 31);
-          this.ctx.lineTo(x - 24 + bannerWave, y - 19);
-          this.ctx.lineTo(x - 10, y - 17);
-          this.ctx.closePath();
+          this.ctx.arc(x - 12, y - 41, 3.5, 0, Math.PI * 2);
           this.ctx.fill();
 
-          // Gold eagle icon on banner
+          // Banner cloth (Rich Red & Gold trim)
+          this.ctx.fillStyle = "#c62828";
+          this.ctx.beginPath();
+          this.ctx.moveTo(x - 12, y - 39);
+          this.ctx.lineTo(x - 32 + bannerWave, y - 35);
+          this.ctx.lineTo(x - 28 + bannerWave, y - 21);
+          this.ctx.lineTo(x - 12, y - 19);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.strokeStyle = "#f1c40f";
+          this.ctx.lineWidth = 1.2;
+          this.ctx.stroke();
+
+          // Gold lion emblem on banner
           this.ctx.fillStyle = "#f1c40f";
-          this.ctx.font = "10px sans-serif";
-          this.ctx.fillText("🦅", x - 23 + bannerWave * 0.5, y - 23);
+          this.ctx.font = "11px sans-serif";
+          this.ctx.fillText("🦁", x - 26 + bannerWave * 0.5, y - 26);
         }
 
         // 8. Overhead HP Bar & Remaining Duration Gauge
-        const barW = 34;
-        const barH = 5;
+        const barW = 36;
+        const barH = 5.5;
         const barX = x - barW / 2;
-        const barY = y - 28;
+        const barY = y - 32;
 
         // HP Background
-        this.ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        this.ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        this.ctx.strokeStyle = "rgba(241, 196, 15, 0.6)";
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        try {
+          if (typeof this.ctx.roundRect === "function") {
+            this.ctx.roundRect(barX - 1, barY - 1, barW + 2, barH + 12, 3);
+          } else {
+            this.ctx.rect(barX - 1, barY - 1, barW + 2, barH + 12);
+          }
+        } catch (e) {
+          this.ctx.rect(barX - 1, barY - 1, barW + 2, barH + 12);
+        }
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // HP Fill
+        this.ctx.fillStyle = hpPct > 0.5 ? "#2ecc71" : (hpPct > 0.25 ? "#f39c12" : "#e74c3c");
+        this.ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+        // Duration / Morale Fill
+        this.ctx.fillStyle = "#3498db";
+        this.ctx.fillRect(barX, barY + barH + 2, barW * durationPct, 3);
+
+        this.ctx.restore();
+      });
+    }
         this.ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
 
         // HP Fill (Gradient green -> red)
@@ -4919,7 +5042,9 @@
 
     // --- WAR CATEGORY CONTROLS (نظام فئات الحرب المنظم: الأسلحة والجيش) ---
     toggleWarCategory(category) {
-      if (this.activeCategoryDrawer !== category) {
+      const drawerContainer = document.getElementById("war-drawer-container");
+      const isCollapsed = drawerContainer && drawerContainer.classList.contains("collapsed");
+      if (isCollapsed || this.activeCategoryDrawer !== category) {
         this.openWarDrawer(category);
       } else {
         // إذا كان القسم مفتوحاً بالفعل، الضغط على الزر ينفذ التجهيز/الاستدعاء الفوري المباشر!
@@ -4977,30 +5102,16 @@
       this.updateShopCards();
     }
 
-    closeWarDrawer() {
-      this.activeCategoryDrawer = null;
+    collapseWarDrawer() {
       const drawerContainer = document.getElementById("war-drawer-container");
-      const wpnPanel = document.getElementById("drawer-weapons-panel");
-      const armyPanel = document.getElementById("drawer-army-panel");
-      const btnWpn = document.getElementById("btn-category-weapons");
-      const btnArmy = document.getElementById("btn-category-army");
-      const wpnIndicator = document.getElementById("wpn-indicator");
-      const armyIndicator = document.getElementById("army-indicator");
+      if (drawerContainer) {
+        drawerContainer.classList.add("collapsed");
+      }
+      this.activeCategoryDrawer = null;
+    }
 
-      if (drawerContainer) drawerContainer.classList.add("collapsed");
-      if (wpnPanel) {
-        wpnPanel.style.display = "none";
-        wpnPanel.classList.add("hidden");
-      }
-      if (armyPanel) {
-        armyPanel.style.display = "none";
-        armyPanel.classList.add("hidden");
-      }
-      if (btnWpn) btnWpn.classList.remove("active");
-      if (btnArmy) btnArmy.classList.remove("active");
-      if (wpnIndicator) wpnIndicator.textContent = "▾";
-      if (armyIndicator) armyIndicator.textContent = "▾";
-      try { this.sound.play("click"); } catch (e) {}
+    closeWarDrawer() {
+      this.collapseWarDrawer();
     }
 
     // --- ROYAL FIELD ARMY LOGIC (فيلق الجيش الملكي الميداني) ---
@@ -5146,6 +5257,7 @@
 
       this.allies.push(ally);
       this.applyFormationPositions();
+      this.collapseWarDrawer();
 
       try {
         this.sound.play("troop_recruit");
@@ -7453,13 +7565,13 @@
         this.ctx.translate(ox, oy);
       }
 
-      // Fast single-blit draw of pre-rendered static background & castle!
-      if (this.bgCanvas) {
-        this.ctx.drawImage(this.bgCanvas, 0, 0, this.width, this.height);
-      } else {
-        this.renderBattlefieldBackground(this.ctx);
-        this.renderCastle(this.ctx);
-      }
+      // Ensure dimensions are valid
+      if (!this.width || this.width < 100) this.width = window.innerWidth || 1200;
+      if (!this.height || this.height < 100) this.height = window.innerHeight || 700;
+
+      // Direct render of battlefield background and castle (guaranteed visible and crisp)
+      this.renderBattlefieldBackground(this.ctx);
+      this.renderCastle(this.ctx);
       this.renderCastleTorches(this.ctx);
 
       this.renderGroundHazards();
@@ -7485,104 +7597,89 @@
       const w = this.width;
       const h = this.height;
 
-      // 1. Natural Medieval Terrain (مروج وتربة ميدان المعركة الطبيعية)
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-      bgGrad.addColorStop(0, "#193524");
-      bgGrad.addColorStop(0.25, "#224730");
-      bgGrad.addColorStop(0.5, "#284f36");
-      bgGrad.addColorStop(0.75, "#21442e");
-      bgGrad.addColorStop(1, "#183222");
+      // 1. Vibrant Multi-stop Medieval Terrain Gradient & Ambient Glow (تدرج حنطي وزمردي حيوي ومضيء)
+      const bgGrad = ctx.createLinearGradient(0, 0, w, h);
+      bgGrad.addColorStop(0, "#0f2e22");
+      bgGrad.addColorStop(0.3, "#1b4332");
+      bgGrad.addColorStop(0.6, "#2d6a4f");
+      bgGrad.addColorStop(0.85, "#1b4332");
+      bgGrad.addColorStop(1, "#0a2218");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, w, h);
 
-      // Subtle grass tufts and field terrain variation
-      ctx.fillStyle = "rgba(38, 77, 52, 0.4)";
-      for (let i = 0; i < 24; i++) {
+      // Ambient radial warm glow around castle and plaza for ultimate vibrancy
+      const ambGlow = ctx.createRadialGradient(w * 0.35, h * 0.5, 50, w * 0.35, h * 0.5, w * 0.6);
+      ambGlow.addColorStop(0, "rgba(255, 215, 0, 0.2)");
+      ambGlow.addColorStop(0.5, "rgba(82, 183, 136, 0.15)");
+      ambGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = ambGlow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Vibrant grass tufts and field terrain variation
+      ctx.fillStyle = "rgba(82, 183, 136, 0.45)";
+      for (let i = 0; i < 28; i++) {
         const gx = ((i * 137) % w);
         const gy = ((i * 89) % h);
-        if (gy < h * 0.35 || gy > h * 0.65) {
+        if (gy < h * 0.32 || gy > h * 0.68) {
           ctx.beginPath();
-          ctx.ellipse(gx, gy, 18, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(gx, gy, 20, 9, 0, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      // 2. Wide Natural Military Highway (طريق عسكري ترابي وحجري طبيعي وأنيق)
-      // Layer A: Wide Earth / Soil Shoulder (كتف الطريق والتربة المحيطة)
-      ctx.strokeStyle = "#5d4037";
-      ctx.lineWidth = 100;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.50);
-      ctx.lineTo(w * 0.75, h * 0.50);
-      ctx.lineTo(w * 0.50, h * 0.50);
-      ctx.lineTo(w * 0.285, h * 0.50);
-      ctx.stroke();
+      // 2. Epic Glowing Crystal Leyline & Obsidian Highways (طرق بلورية سحرية منحنية مع طاقة مضيئة)
+      BATTLEFIELD_PATHS.forEach((pathObj, pIdx) => {
+        const wps = pathObj.waypoints;
+        if (!wps || wps.length === 0) return;
 
-      // Layer B: Packed Clay, Gravel & Sandy Earth Layer (جسم الطريق الرئيسي من الحصى والتربة الممهدة)
-      ctx.strokeStyle = "#8d6e63";
-      ctx.lineWidth = 80;
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.50);
-      ctx.lineTo(w * 0.75, h * 0.50);
-      ctx.lineTo(w * 0.50, h * 0.50);
-      ctx.lineTo(w * 0.285, h * 0.50);
-      ctx.stroke();
+        const traceWaypoints = () => {
+          ctx.beginPath();
+          ctx.moveTo(wps[0].rx * w, wps[0].ry * h);
+          for (let i = 1; i < wps.length; i++) {
+            const prev = wps[i - 1];
+            const curr = wps[i];
+            const midX = (prev.rx + curr.rx) / 2 * w;
+            const midY = (prev.ry + curr.ry) / 2 * h;
+            ctx.quadraticCurveTo(prev.rx * w, prev.ry * h, midX, midY);
+          }
+          const last = wps[wps.length - 1];
+          ctx.lineTo(last.rx * w, last.ry * h);
+        };
 
-      // Layer C: Compacted Stone & Silt Center (طبقة السطح الحجرية الدافئة)
-      ctx.strokeStyle = "#a1887f";
-      ctx.lineWidth = 58;
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.50);
-      ctx.lineTo(w * 0.75, h * 0.50);
-      ctx.lineTo(w * 0.50, h * 0.50);
-      ctx.lineTo(w * 0.285, h * 0.50);
-      ctx.stroke();
+        // Outer Obsidian Border
+        ctx.strokeStyle = "#0b0f19";
+        ctx.lineWidth = 140;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        traceWaypoints();
+        ctx.stroke();
 
-      // Layer D: Cobblestone Paving Core (رصف الحجارة القديمة في قلب الطريق)
-      ctx.strokeStyle = "#bcaaa4";
-      ctx.lineWidth = 36;
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.50);
-      ctx.lineTo(w * 0.75, h * 0.50);
-      ctx.lineTo(w * 0.50, h * 0.50);
-      ctx.lineTo(w * 0.285, h * 0.50);
-      ctx.stroke();
+        // Dark Volcanic Stone Body
+        ctx.strokeStyle = "#1f2937";
+        ctx.lineWidth = 120;
+        traceWaypoints();
+        ctx.stroke();
 
-      // Layer E: Medieval Cobblestones Texture & Flagstones (نقوش وبلاطات الحجارة الممهدة)
-      ctx.strokeStyle = "rgba(78, 52, 46, 0.35)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([12, 14]);
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.48);
-      ctx.lineTo(w * 0.285, h * 0.48);
-      ctx.moveTo(w * 1.05, h * 0.52);
-      ctx.lineTo(w * 0.285, h * 0.52);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        // Polished Paved Surface
+        ctx.strokeStyle = "#374151";
+        ctx.lineWidth = 98;
+        traceWaypoints();
+        ctx.stroke();
 
-      // Layer F: Cart Wheel Ruts (أخاديد عجلات العربات والخيول)
-      ctx.strokeStyle = "rgba(62, 39, 35, 0.45)";
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.46);
-      ctx.lineTo(w * 0.285, h * 0.47);
-      ctx.moveTo(w * 1.05, h * 0.54);
-      ctx.lineTo(w * 0.285, h * 0.53);
-      ctx.stroke();
+        // Glowing Neon Energy Core
+        ctx.strokeStyle = pIdx % 2 === 0 ? "rgba(0, 210, 211, 0.5)" : "rgba(243, 156, 18, 0.5)";
+        ctx.lineWidth = 44;
+        traceWaypoints();
+        ctx.stroke();
 
-      // Layer G: Stone Curbs & Borders along highway edges (أحجار حواف الطريق الجانبية)
-      ctx.strokeStyle = "rgba(189, 189, 189, 0.65)";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([8, 10]);
-      ctx.beginPath();
-      ctx.moveTo(w * 1.05, h * 0.42);
-      ctx.lineTo(w * 0.35, h * 0.43);
-      ctx.moveTo(w * 1.05, h * 0.58);
-      ctx.lineTo(w * 0.35, h * 0.57);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        // Bright Central Runic Pulse Line
+        ctx.strokeStyle = pIdx % 2 === 0 ? "#00f0ff" : "#f1c40f";
+        ctx.lineWidth = 8;
+        ctx.setLineDash([16, 12]);
+        traceWaypoints();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
 
       // 3. Grand Battle Arena Plaza (ساحة المعركة ورصف الحجارة الملكية أمام القلعة)
       const plazaX = w * 0.38;
@@ -7693,66 +7790,40 @@
     renderCastle(ctx = this.ctx) {
       const w = this.width;
       const h = this.height;
-      const castleWidth = w * 0.28;
+      const castleW = w * 0.27; // Epic stone fortress width
 
-      // 1. Rear Castle Keep / Royal Bastion (Deep Left)
-      ctx.fillStyle = "#1e2738";
-      ctx.fillRect(0, h * 0.22, castleWidth * 0.55, h * 0.56);
+      ctx.save();
 
-      // Keep crenellations
-      for (let y = h * 0.22; y <= h * 0.78; y += 28) {
-        ctx.fillStyle = "#253248";
-        ctx.fillRect(castleWidth * 0.52, y, 12, 16);
-      }
-
-      // 2. North Fortress Tower (Top Left)
-      ctx.fillStyle = "#28374d";
-      ctx.fillRect(0, 0, castleWidth * 0.7, h * 0.3);
-      // North tower roof
-      ctx.fillStyle = "#7b1113";
+      // Castle Ground Shadow for 3D Depth
+      ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(castleWidth * 0.35, 0);
-      ctx.lineTo(castleWidth * 0.7, h * 0.12);
-      ctx.lineTo(0, h * 0.12);
-      ctx.closePath();
+      ctx.ellipse(castleW * 0.55, h * 0.52, castleW * 0.48, h * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 3. South Fortress Tower (Bottom Left)
-      ctx.fillStyle = "#28374d";
-      ctx.fillRect(0, h * 0.7, castleWidth * 0.7, h * 0.3);
-      // South tower roof
-      ctx.fillStyle = "#7b1113";
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-      ctx.lineTo(castleWidth * 0.35, h);
-      ctx.lineTo(castleWidth * 0.7, h * 0.88);
-      ctx.lineTo(0, h * 0.88);
-      ctx.closePath();
-      ctx.fill();
+      // 1. Stone Fortress Outer Walls (Multi-layered 3D Stone Texture)
+      const wallGrad = ctx.createLinearGradient(0, 0, castleW, 0);
+      wallGrad.addColorStop(0, "#4a5568");
+      wallGrad.addColorStop(0.5, "#374151");
+      wallGrad.addColorStop(1, "#1f2937");
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(0, h * 0.1, castleW, h * 0.8);
 
-      // 4. Main Massive Stone Rampart / Forward Wall
-      const wallX = castleWidth * 0.58;
-      const wallW = castleWidth * 0.42;
+      // Stone Wall Outline & Bevels
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, h * 0.1, castleW, h * 0.8);
 
-      const stoneGrad = ctx.createLinearGradient(wallX, 0, wallX + wallW, 0);
-      stoneGrad.addColorStop(0, "#2c3e50");
-      stoneGrad.addColorStop(0.7, "#34495e");
-      stoneGrad.addColorStop(1, "#1e2a38");
-      ctx.fillStyle = stoneGrad;
-      ctx.fillRect(wallX, 0, wallW, h);
-
-      // Stone Brick Texture Lines
+      // Realistic Stone Block Pattern
       ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
       ctx.lineWidth = 1.5;
-      for (let y = 0; y < h; y += 22) {
+      for (let y = h * 0.12; y < h * 0.9; y += 22) {
         ctx.beginPath();
-        ctx.moveTo(wallX, y);
-        ctx.lineTo(wallX + wallW, y);
+        ctx.moveTo(0, y);
+        ctx.lineTo(castleW, y);
         ctx.stroke();
-
-        const offset = (y % 44 === 0) ? 0 : 18;
-        for (let x = wallX + offset; x < wallX + wallW; x += 36) {
+        // Vertical brick seams
+        const offset = (y / 22) % 2 === 0 ? 0 : 15;
+        for (let x = offset; x < castleW; x += 30) {
           ctx.beginPath();
           ctx.moveTo(x, y);
           ctx.lineTo(x, y + 22);
@@ -7760,79 +7831,168 @@
         }
       }
 
-      // Outer Wall Battlements (Crenellations along the front edge)
-      const crenX = wallX + wallW - 12;
-      for (let cy = 10; cy < h; cy += 32) {
-        ctx.fillStyle = "#1e2b37";
-        ctx.fillRect(crenX, cy, 14, 18);
-        ctx.fillStyle = "#4a627a";
-        ctx.fillRect(crenX, cy, 14, 3);
-      }
+      // Golden Trim & Highlight along wall top
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.1);
+      ctx.lineTo(castleW, h * 0.1);
+      ctx.stroke();
 
-      // 5. Heavy Portcullis & Iron Gatehouse (Center of wall)
-      const gateY = h * 0.46;
-      const gateH = h * 0.18;
-      ctx.fillStyle = "#11151c";
-      ctx.fillRect(wallX + wallW - 20, gateY, 22, gateH);
+      // 2. Four Corner Stone Towers (Round towers with battlements)
+      const towerRadius = 22;
+      const towerPositions = [
+        { x: towerRadius, y: h * 0.15 },
+        { x: towerRadius, y: h * 0.85 },
+        { x: castleW - towerRadius, y: h * 0.15 },
+        { x: castleW - towerRadius, y: h * 0.85 }
+      ];
 
-      // Iron gate grid
-      ctx.strokeStyle = "#7f8c8d";
-      ctx.lineWidth = 3;
-      for (let gx = wallX + wallW - 18; gx <= wallX + wallW; gx += 6) {
+      towerPositions.forEach(tp => {
+        // Tower base shadow
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.beginPath();
-        ctx.moveTo(gx, gateY);
-        ctx.lineTo(gx, gateY + gateH);
+        ctx.arc(tp.x + 3, tp.y + 4, towerRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tower cylindrical body gradient
+        const tGrad = ctx.createRadialGradient(tp.x - 6, tp.y - 6, 4, tp.x, tp.y, towerRadius);
+        tGrad.addColorStop(0, "#64748b");
+        tGrad.addColorStop(0.7, "#334155");
+        tGrad.addColorStop(1, "#1e293b");
+        ctx.fillStyle = tGrad;
+        ctx.beginPath();
+        ctx.arc(tp.x, tp.y, towerRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineWidth = 2.5;
         ctx.stroke();
+
+        // Tower Battlements (Crenellations)
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+          const bx = tp.x + Math.cos(a) * (towerRadius - 2);
+          const by = tp.y + Math.sin(a) * (towerRadius - 2);
+          ctx.fillStyle = "#1e293b";
+          ctx.fillRect(bx - 4, by - 4, 8, 8);
+        }
+
+        // Tower roof cone / cap
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath();
+        ctx.arc(tp.x, tp.y, towerRadius * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+
+      // 3. Central Keep Tower (Multi-tiered majestic citadel)
+      const keepX = castleW * 0.52;
+      const keepY = h * 0.5;
+      const keepW = 75;
+      const keepH = 95;
+
+      // Keep Shadow
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.fillRect(keepX - keepW / 2 + 5, keepY - keepH / 2 + 5, keepW, keepH);
+
+      // Keep Body
+      const keepGrad = ctx.createLinearGradient(keepX - keepW / 2, 0, keepX + keepW / 2, 0);
+      keepGrad.addColorStop(0, "#475569");
+      keepGrad.addColorStop(0.5, "#334155");
+      keepGrad.addColorStop(1, "#1e293b");
+      ctx.fillStyle = keepGrad;
+      ctx.fillRect(keepX - keepW / 2, keepY - keepH / 2, keepW, keepH);
+
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(keepX - keepW / 2, keepY - keepH / 2, keepW, keepH);
+
+      // Keep Arched Windows & Details
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(keepX - 16, keepY - 25, 10, 18);
+      ctx.fillRect(keepX + 6, keepY - 25, 10, 18);
+      ctx.fillRect(keepX - 16, keepY + 5, 10, 18);
+      ctx.fillRect(keepX + 6, keepY + 5, 10, 18);
+
+      // 4. Main Castle Gate & Wooden Doors
+      const gateW = 34;
+      const gateH = 50;
+      const gateX = castleW - 2;
+      const gateY = h * 0.5 - gateH / 2;
+
+      // Gate Arch recess
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(gateX - gateW, gateY, gateW + 2, gateH);
+
+      // Wooden Double Doors
+      ctx.fillStyle = "#5d4037";
+      ctx.fillRect(gateX - gateW + 2, gateY + 4, gateW - 4, gateH - 4);
+
+      // Wooden Planks & Iron Reinforcement
+      ctx.strokeStyle = "#3e2723";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(gateX - gateW + 2, gateY + 4, gateW - 4, gateH - 4);
+      ctx.beginPath();
+      ctx.moveTo(gateX - gateW / 2, gateY + 4);
+      ctx.lineTo(gateX - gateW / 2, gateY + gateH - 4);
+      ctx.stroke();
+
+      // Iron Studs / Bolts
+      ctx.fillStyle = "#cbd5e1";
+      for (let by = gateY + 10; by < gateY + gateH - 5; by += 12) {
+        ctx.beginPath();
+        ctx.arc(gateX - gateW + 8, by, 2, 0, Math.PI * 2);
+        ctx.arc(gateX - 8, by, 2, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      // Castle Wall Decorative Banners
-      this.renderCastleDecorations(wallX, wallW, h, ctx);
-    }
-
-    renderCastleDecorations(wallX, wallW, h, ctx = this.ctx) {
-      // Golden Lion/Eagle Shield Insignia above gate
-      const bannerX = wallX + wallW - 32;
-      const bannerY = h * 0.44;
-
-      ctx.fillStyle = "#c0392b";
+      // 5. Red Castle Banners (Insignia)
+      const bannerX = castleW - 35;
+      const bannerY = h * 0.32;
+      ctx.fillStyle = "#dc2626";
       ctx.beginPath();
       ctx.moveTo(bannerX, bannerY);
-      ctx.lineTo(bannerX + 22, bannerY);
-      ctx.lineTo(bannerX + 22, bannerY + 28);
-      ctx.lineTo(bannerX + 11, bannerY + 36);
-      ctx.lineTo(bannerX, bannerY + 28);
+      ctx.lineTo(bannerX + 24, bannerY);
+      ctx.lineTo(bannerX + 24, bannerY + 36);
+      ctx.lineTo(bannerX + 12, bannerY + 45);
+      ctx.lineTo(bannerX, bannerY + 36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#991b1b";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Gold crown emblem on banner
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.moveTo(bannerX + 8, bannerY + 12);
+      ctx.lineTo(bannerX + 12, bannerY + 22);
+      ctx.lineTo(bannerX + 16, bannerY + 12);
+      ctx.lineTo(bannerX + 20, bannerY + 22);
+      ctx.lineTo(bannerX + 4, bannerY + 22);
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = "#f1c40f";
-      ctx.font = "bold 14px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("🛡️", bannerX + 11, bannerY + 20);
+      ctx.restore();
     }
 
     renderCastleTorches(ctx = this.ctx) {
-      const castleWidth = this.width * 0.28;
-      const wallX = castleWidth * 0.58;
-      const wallW = castleWidth * 0.42;
+      const castleWidth = this.width * 0.20;
       const h = this.height;
 
-      // Flickering Torches along the battlements (rendered dynamically with flicker)
-      const torchYList = [h * 0.15, h * 0.35, h * 0.65, h * 0.85];
+      // Minimalist Torch Glows
+      const torchYList = [h * 0.25, h * 0.75];
       torchYList.forEach((ty, idx) => {
-        const tx = wallX + wallW + 2;
-        // Bracket
-        ctx.fillStyle = "#333";
-        ctx.fillRect(tx - 6, ty - 2, 8, 4);
-
-        // Flame glow
-        const flicker = Math.sin(this.ambientTime * 8 + idx) * 3;
-        const flameGrad = ctx.createRadialGradient(tx + 2, ty, 2, tx + 2, ty, 18 + flicker);
-        flameGrad.addColorStop(0, "rgba(255, 230, 100, 0.8)");
-        flameGrad.addColorStop(0.4, "rgba(243, 156, 18, 0.5)");
+        const tx = castleWidth - 2;
+        const flicker = Math.sin(this.ambientTime * 6 + idx) * 2;
+        const flameGrad = ctx.createRadialGradient(tx, ty, 1, tx, ty, 12 + flicker);
+        flameGrad.addColorStop(0, "rgba(255, 230, 100, 0.7)");
         flameGrad.addColorStop(1, "rgba(231, 76, 60, 0)");
         ctx.fillStyle = flameGrad;
         ctx.beginPath();
-        ctx.arc(tx + 2, ty, 18 + flicker, 0, Math.PI * 2);
+        ctx.arc(tx, ty, 12 + flicker, 0, Math.PI * 2);
         ctx.fill();
       });
     }
@@ -7926,15 +8086,19 @@
         this.ctx.save();
         this.ctx.translate(t.x, t.y);
 
-        // 1. Heavy Fortress Octagonal Masonry Turret Pedestal
-        const platR = 25;
+        // 1. Heavy Fortress Octagonal Masonry Turret Pedestal with Glowing Runic Core
+        const platR = 26;
         this.ctx.save();
-        this.ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
-        this.ctx.shadowBlur = 8;
-        this.ctx.shadowOffsetY = 3;
+        this.ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowOffsetY = 4;
 
-        // Base plate (Dark granite stone)
-        this.ctx.fillStyle = "#1b242f";
+        // Base plate (Dark granite stone with bevels)
+        const pedestalGrad = this.ctx.createRadialGradient(0, 0, 5, 0, 0, platR);
+        pedestalGrad.addColorStop(0, "#2c3e50");
+        pedestalGrad.addColorStop(0.7, "#1e293b");
+        pedestalGrad.addColorStop(1, "#0f172a");
+        this.ctx.fillStyle = pedestalGrad;
         this.ctx.beginPath();
         for (let a = 0; a < 8; a++) {
           const ang = (a * Math.PI) / 4 + Math.PI / 8;
@@ -7948,40 +8112,40 @@
         this.ctx.restore();
 
         // Inner beveled stone ring
-        this.ctx.strokeStyle = "#34495e";
+        this.ctx.strokeStyle = "#475569";
         this.ctx.lineWidth = 2.5;
         this.ctx.stroke();
 
-        // Glowing runic engravings in the foundation stone
-        const runePulse = Math.sin(this.ambientTime * 3 + t.x * 0.05) * 0.35 + 0.65;
-        this.ctx.strokeStyle = t.color;
-        this.ctx.globalAlpha = 0.55 * runePulse;
-        this.ctx.lineWidth = 1.5;
+        // Glowing runic engravings in foundation stone
+        const runePulse = Math.sin(this.ambientTime * 4 + t.x * 0.05) * 0.4 + 0.6;
+        this.ctx.strokeStyle = t.color || "#3b82f6";
+        this.ctx.globalAlpha = 0.65 * runePulse;
+        this.ctx.lineWidth = 1.8;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 19, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, 20, 0, Math.PI * 2);
         this.ctx.stroke();
         this.ctx.globalAlpha = 1.0;
 
         // Mechanical brass turntable gear ring
-        this.ctx.strokeStyle = "#d4ac0d";
-        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeStyle = "#f59e0b";
+        this.ctx.lineWidth = 1.8;
         this.ctx.setLineDash([3, 4]);
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, 16.5, 0, Math.PI * 2);
         this.ctx.stroke();
         this.ctx.setLineDash([]);
 
-        // Level Upgrades Jewels / Floating Mana Orbs
+        // Level Upgrades Jewels / Floating Mana Orbs with Glow
         for (let l = 0; l < t.level; l++) {
-          const gemAngle = -Math.PI / 2 + (l - (t.level - 1) / 2) * 0.5;
-          const gx = Math.cos(gemAngle) * 22;
-          const gy = Math.sin(gemAngle) * 22;
+          const gemAngle = -Math.PI / 2 + (l - (t.level - 1) / 2) * 0.55;
+          const gx = Math.cos(gemAngle) * 23;
+          const gy = Math.sin(gemAngle) * 23;
 
-          this.ctx.fillStyle = (l === 2) ? "#f39c12" : (l === 1 ? "#00e5ff" : "#2ecc71");
+          this.ctx.fillStyle = (l === 2) ? "#f59e0b" : (l === 1 ? "#06b6d4" : "#10b981");
           this.ctx.shadowColor = this.ctx.fillStyle;
-          this.ctx.shadowBlur = 6;
+          this.ctx.shadowBlur = 8;
           this.ctx.beginPath();
-          this.ctx.arc(gx, gy, 3.5, 0, Math.PI * 2);
+          this.ctx.arc(gx, gy, 4, 0, Math.PI * 2);
           this.ctx.fill();
           this.ctx.shadowBlur = 0;
         }
@@ -7997,144 +8161,250 @@
 
         if (t.type === "cannonball") {
           // --- HEAVY SIEGE CANNON (Dragon Mortar) ---
-          this.ctx.fillStyle = "#2c3e50";
-          this.ctx.fillRect(-6, -9, 14, 18);
+          this.ctx.fillStyle = "#1e293b";
+          this.ctx.fillRect(-7, -10, 16, 20);
 
-          const barrelGrad = this.ctx.createLinearGradient(0, -6, 0, 6);
-          barrelGrad.addColorStop(0, "#485460");
-          barrelGrad.addColorStop(0.4, "#1e272e");
-          barrelGrad.addColorStop(1, "#0f1418");
+          const barrelGrad = this.ctx.createLinearGradient(0, -7, 0, 7);
+          barrelGrad.addColorStop(0, "#64748b");
+          barrelGrad.addColorStop(0.4, "#334155");
+          barrelGrad.addColorStop(1, "#0f172a");
           this.ctx.fillStyle = barrelGrad;
 
           this.ctx.beginPath();
-          this.ctx.arc(-2, 0, 7, Math.PI * 0.5, Math.PI * 1.5);
+          this.ctx.arc(-2, 0, 8, Math.PI * 0.5, Math.PI * 1.5);
           this.ctx.fill();
 
-          this.ctx.fillRect(0, -6, 26, 12);
+          this.ctx.fillRect(0, -7, 28, 14);
 
-          this.ctx.fillStyle = "#d35400";
-          this.ctx.fillRect(7, -6.5, 3.5, 13);
-          this.ctx.fillRect(16, -6.5, 3.5, 13);
+          // Golden reinforcing rings on barrel
+          this.ctx.fillStyle = "#f59e0b";
+          this.ctx.fillRect(7, -7.5, 4, 15);
+          this.ctx.fillRect(17, -7.5, 4, 15);
 
-          this.ctx.fillStyle = "#f39c12";
-          this.ctx.fillRect(25, -7.5, 5, 15);
-
-          this.ctx.fillStyle = "#000";
-          this.ctx.fillRect(29, -4.5, 2, 9);
+          // Dragon mouth muzzle
+          this.ctx.fillStyle = "#b91c1c";
+          this.ctx.fillRect(27, -8.5, 6, 17);
+          this.ctx.fillStyle = "#0f172a";
+          this.ctx.fillRect(31, -5, 3, 10);
 
           if (recoilOffset > 2) {
             this.ctx.fillStyle = "#ff5722";
+            this.ctx.shadowColor = "#ff5722";
+            this.ctx.shadowBlur = 12;
             this.ctx.beginPath();
-            this.ctx.arc(-1, -6.5, 3, 0, Math.PI * 2);
+            this.ctx.arc(-2, -7.5, 5, 0, Math.PI * 2);
             this.ctx.fill();
+            this.ctx.shadowBlur = 0;
           }
         } else if (t.type === "arrow") {
           // --- ARCHER GARRISON / REPEATING CROSSBOW ---
-          this.ctx.fillStyle = "#5d4037";
-          this.ctx.fillRect(-6, -3, 24, 6);
+          this.ctx.fillStyle = "#78350f";
+          this.ctx.fillRect(-7, -3.5, 26, 7);
 
-          this.ctx.strokeStyle = "#8d6e63";
-          this.ctx.lineWidth = 4;
+          this.ctx.strokeStyle = "#b45309";
+          this.ctx.lineWidth = 4.5;
           this.ctx.beginPath();
-          this.ctx.moveTo(10, -18);
-          this.ctx.quadraticCurveTo(15, -8, 8, 0);
-          this.ctx.quadraticCurveTo(15, 8, 10, 18);
+          this.ctx.moveTo(11, -20);
+          this.ctx.quadraticCurveTo(17, -9, 9, 0);
+          this.ctx.quadraticCurveTo(17, 9, 11, 20);
           this.ctx.stroke();
 
-          this.ctx.fillStyle = "#f1c40f";
+          this.ctx.fillStyle = "#f59e0b";
           this.ctx.beginPath();
-          this.ctx.arc(10, -18, 3, 0, Math.PI * 2);
-          this.ctx.arc(10, 18, 3, 0, Math.PI * 2);
+          this.ctx.arc(11, -20, 3.5, 0, Math.PI * 2);
+          this.ctx.arc(11, 20, 3.5, 0, Math.PI * 2);
           this.ctx.fill();
 
-          this.ctx.strokeStyle = "#ecf0f1";
-          this.ctx.lineWidth = 1.2;
+          this.ctx.strokeStyle = "#ffffff";
+          this.ctx.lineWidth = 1.5;
           this.ctx.beginPath();
-          this.ctx.moveTo(10, -18);
+          this.ctx.moveTo(11, -20);
           this.ctx.lineTo(0, 0);
-          this.ctx.lineTo(10, 18);
+          this.ctx.lineTo(11, 20);
           this.ctx.stroke();
 
-          const arrowColor = t.color || "#2ecc71";
-          this.ctx.fillStyle = "#d7ccc8";
-          this.ctx.fillRect(0, -1.2, 22, 2.4);
+          const arrowColor = t.color || "#10b981";
+          this.ctx.fillStyle = "#e2e8f0";
+          this.ctx.fillRect(0, -1.5, 24, 3);
 
-          this.ctx.fillStyle = "#e74c3c";
+          this.ctx.fillStyle = "#ef4444";
           this.ctx.beginPath();
-          this.ctx.moveTo(1, -3);
-          this.ctx.lineTo(5, -1.2);
-          this.ctx.lineTo(5, 1.2);
-          this.ctx.lineTo(1, 3);
+          this.ctx.moveTo(1, -3.5);
+          this.ctx.lineTo(6, -1.5);
+          this.ctx.lineTo(6, 1.5);
+          this.ctx.lineTo(1, 3.5);
           this.ctx.closePath();
           this.ctx.fill();
 
           this.ctx.fillStyle = arrowColor;
+          this.ctx.shadowColor = arrowColor;
+          this.ctx.shadowBlur = 6;
           this.ctx.beginPath();
-          this.ctx.moveTo(22, -3.5);
-          this.ctx.lineTo(28, 0);
-          this.ctx.lineTo(22, 3.5);
+          this.ctx.moveTo(24, -4);
+          this.ctx.lineTo(31, 0);
+          this.ctx.lineTo(24, 4);
           this.ctx.closePath();
           this.ctx.fill();
+          this.ctx.shadowBlur = 0;
         } else if (t.type === "bolt") {
-          // --- BALLISTA (Sniper Harpoon Engine) ---
-          this.ctx.fillStyle = "#2c3e50";
-          this.ctx.fillRect(-8, -4, 34, 8);
+          // --- BALLISTA (Sniper Plasma Harpoon Engine) ---
+          this.ctx.fillStyle = "#1e293b";
+          this.ctx.fillRect(-9, -4.5, 36, 9);
 
-          this.ctx.fillStyle = "#00e5ff";
-          this.ctx.fillRect(-4, -6, 8, 12);
+          this.ctx.fillStyle = "#06b6d4";
+          this.ctx.shadowColor = "#06b6d4";
+          this.ctx.shadowBlur = 10;
+          this.ctx.fillRect(-5, -7, 10, 14);
+          this.ctx.shadowBlur = 0;
 
-          this.ctx.strokeStyle = "#3498db";
-          this.ctx.lineWidth = 4.5;
+          this.ctx.strokeStyle = "#3b82f6";
+          this.ctx.lineWidth = 5;
           this.ctx.beginPath();
-          this.ctx.moveTo(14, -22);
-          this.ctx.quadraticCurveTo(20, -10, 12, 0);
-          this.ctx.quadraticCurveTo(20, 10, 14, 22);
+          this.ctx.moveTo(15, -24);
+          this.ctx.quadraticCurveTo(22, -11, 13, 0);
+          this.ctx.quadraticCurveTo(22, 11, 15, 24);
           this.ctx.stroke();
 
-          this.ctx.strokeStyle = "#00e5ff";
-          this.ctx.lineWidth = 1.8;
+          this.ctx.strokeStyle = "#06b6d4";
+          this.ctx.lineWidth = 2;
           this.ctx.beginPath();
-          this.ctx.moveTo(14, -22);
+          this.ctx.moveTo(15, -24);
           this.ctx.lineTo(-2, 0);
-          this.ctx.lineTo(14, 22);
+          this.ctx.lineTo(15, 24);
           this.ctx.stroke();
 
-          this.ctx.fillStyle = "#bdc3c7";
-          this.ctx.fillRect(-2, -2, 32, 4);
+          this.ctx.fillStyle = "#cbd5e1";
+          this.ctx.fillRect(-2, -2.5, 34, 5);
 
-          this.ctx.fillStyle = "#00e5ff";
+          this.ctx.fillStyle = "#06b6d4";
+          this.ctx.shadowColor = "#06b6d4";
+          this.ctx.shadowBlur = 10;
           this.ctx.beginPath();
-          this.ctx.moveTo(30, -5);
-          this.ctx.lineTo(39, 0);
-          this.ctx.lineTo(30, 5);
-          this.ctx.lineTo(33, 0);
+          this.ctx.moveTo(32, -6);
+          this.ctx.lineTo(42, 0);
+          this.ctx.lineTo(32, 6);
+          this.ctx.lineTo(35, 0);
           this.ctx.closePath();
           this.ctx.fill();
+          this.ctx.shadowBlur = 0;
 
-          this.ctx.strokeStyle = "rgba(0, 229, 255, 0.4)";
-          this.ctx.lineWidth = 1;
-          this.ctx.setLineDash([4, 6]);
+          this.ctx.strokeStyle = "rgba(6, 182, 212, 0.6)";
+          this.ctx.lineWidth = 1.5;
+          this.ctx.setLineDash([5, 5]);
           this.ctx.beginPath();
-          this.ctx.moveTo(40, 0);
-          this.ctx.lineTo(75, 0);
+          this.ctx.moveTo(42, 0);
+          this.ctx.lineTo(85, 0);
           this.ctx.stroke();
           this.ctx.setLineDash([]);
         } else if (t.type === "flame") {
-          // --- FLAMETHROWER (Infernal Projector) ---
-          this.ctx.fillStyle = "#d35400";
-          this.ctx.fillRect(-6, -11, 14, 8);
-          this.ctx.fillRect(-6, 3, 14, 8);
+          // --- FLAMETHROWER (Infernal Plasma Projector) ---
+          this.ctx.fillStyle = "#c2410c";
+          this.ctx.fillRect(-7, -12, 16, 9);
+          this.ctx.fillRect(-7, 3, 16, 9);
 
-          this.ctx.fillStyle = "#f39c12";
-          this.ctx.fillRect(-8, -10, 3, 6);
-          this.ctx.fillRect(-8, 4, 3, 6);
+          this.ctx.fillStyle = "#fbbf24";
+          this.ctx.fillRect(-9, -11, 4, 7);
+          this.ctx.fillRect(-9, 4, 4, 7);
 
-          this.ctx.fillStyle = "#c0392b";
-          this.ctx.fillRect(4, -5, 20, 10);
+          this.ctx.fillStyle = "#991b1b";
+          this.ctx.fillRect(5, -6, 22, 12);
 
-          this.ctx.fillStyle = "#e74c3c";
+          this.ctx.fillStyle = "#ef4444";
           this.ctx.beginPath();
-          this.ctx.moveTo(20, -7);
+          this.ctx.moveTo(22, -8);
+          this.ctx.lineTo(30, -6);
+          this.ctx.lineTo(33, 0);
+          this.ctx.lineTo(30, 6);
+          this.ctx.lineTo(22, 8);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          const flameFlicker = Math.sin(this.ambientTime * 18) * 4;
+          this.ctx.fillStyle = "#f59e0b";
+          this.ctx.shadowColor = "#f59e0b";
+          this.ctx.shadowBlur = 14;
+          this.ctx.beginPath();
+          this.ctx.arc(35 + flameFlicker * 0.5, 0, 5 + flameFlicker * 0.4, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.shadowBlur = 0;
+        } else if (t.type === "lightning") {
+          // --- TESLA SPIRE (Storm Arc Conduit) ---
+          this.ctx.fillStyle = "#1e293b";
+          this.ctx.beginPath();
+          this.ctx.moveTo(-6, -8);
+          this.ctx.lineTo(20, -5);
+          this.ctx.lineTo(28, 0);
+          this.ctx.lineTo(20, 5);
+          this.ctx.lineTo(-6, 8);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = "#f97316";
+          this.ctx.lineWidth = 3;
+          for (let c = 0; c < 3; c++) {
+            this.ctx.beginPath();
+            this.ctx.arc(4 + c * 7, 0, 7, -Math.PI * 0.4, Math.PI * 0.4);
+            this.ctx.stroke();
+          }
+
+          const orbPulse = Math.sin(this.ambientTime * 10) * 2.5;
+          this.ctx.fillStyle = "#a855f7";
+          this.ctx.shadowColor = "#06b6d4";
+          this.ctx.shadowBlur = 14;
+          this.ctx.beginPath();
+          this.ctx.arc(26, 0, 8 + orbPulse, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.shadowBlur = 0;
+
+          this.ctx.strokeStyle = "#06b6d4";
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(11, (Math.random() - 0.5) * 8);
+          this.ctx.lineTo(19, (Math.random() - 0.5) * 10);
+          this.ctx.lineTo(26, 0);
+          this.ctx.stroke();
+        } else if (t.type === "boulder") {
+          // --- CATAPULT (Magma Trebuchet) ---
+          this.ctx.fillStyle = "#451a03";
+          this.ctx.fillRect(-9, -7, 28, 14);
+
+          this.ctx.fillStyle = "#1e293b";
+          this.ctx.fillRect(-14, -8, 9, 16);
+
+          this.ctx.fillStyle = "#78350f";
+          this.ctx.fillRect(-2, -4, 32, 8);
+
+          this.ctx.fillStyle = "#0f172a";
+          this.ctx.beginPath();
+          this.ctx.arc(28, 0, 8.5, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.fillStyle = "#c2410c";
+          this.ctx.shadowColor = "#ea580c";
+          this.ctx.shadowBlur = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(28, 0, 7, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.shadowBlur = 0;
+
+          this.ctx.fillStyle = "#fef08a";
+          this.ctx.beginPath();
+          this.ctx.arc(28, 0, 3.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // Center reinforced pivot cap
+        this.ctx.fillStyle = "#0f172a";
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.strokeStyle = "#f59e0b";
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      });
+    }
           this.ctx.lineTo(28, -5);
           this.ctx.lineTo(30, 0);
           this.ctx.lineTo(28, 5);
