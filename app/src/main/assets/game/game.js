@@ -16,6 +16,9 @@
       this.masterGain = null;
       this.musicGain = null;
       this.sfxGain = null;
+      this.isInitializing = false;
+      this.isSyncingUI = false;
+      this.snareBuffer = null;
 
       // Audio settings with LocalStorage persistence
       this.settings = {
@@ -82,57 +85,88 @@
     }
 
     init() {
-      if (!this.ctx) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          this.ctx = new AudioCtx();
-          this.masterGain = this.ctx.createGain();
-          this.musicGain = this.ctx.createGain();
-          this.sfxGain = this.ctx.createGain();
+      if (this.isInitializing) return;
+      this.isInitializing = true;
+      try {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+            this.masterGain = this.ctx.createGain();
+            this.musicGain = this.ctx.createGain();
+            this.sfxGain = this.ctx.createGain();
 
-          this.musicGain.connect(this.masterGain);
-          this.sfxGain.connect(this.masterGain);
-          this.masterGain.connect(this.ctx.destination);
+            this.musicGain.connect(this.masterGain);
+            this.sfxGain.connect(this.masterGain);
+            this.masterGain.connect(this.ctx.destination);
 
-          this.applyGains();
+            this.initSnareBuffer();
+            this.applyGains();
+          }
         }
-      }
-      if (this.ctx && this.ctx.state === "suspended") {
-        this.ctx.resume();
-      }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume().catch(() => {});
+        }
 
-      if (this.settings.musicEnabled && !this.musicPlaying && this.ctx) {
-        this.startMusic();
+        if (this.settings.musicEnabled && !this.musicPlaying && this.ctx) {
+          this.startMusic();
+        }
+      } catch (err) {
+        console.warn("Audio init warning:", err);
+      } finally {
+        this.isInitializing = false;
       }
     }
 
-    applyGains() {
-      if (!this.ctx || !this.masterGain) return;
-      const t = this.ctx.currentTime;
-      const mVol = this.settings.masterEnabled ? this.settings.masterVolume : 0;
-      const bgmVol = this.settings.musicEnabled ? this.settings.musicVolume : 0;
-      const sfxVol = this.settings.sfxEnabled ? this.settings.sfxVolume : 0;
+    initSnareBuffer() {
+      if (this.snareBuffer || !this.ctx) return;
+      try {
+        const sr = this.ctx.sampleRate || 44100;
+        const bufferSize = Math.floor(sr * 0.12);
+        this.snareBuffer = this.ctx.createBuffer(1, bufferSize, sr);
+        const data = this.snareBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.035));
+        }
+      } catch (e) {}
+    }
 
-      this.masterGain.gain.setValueAtTime(mVol, t);
-      this.musicGain.gain.setValueAtTime(bgmVol, t);
-      this.sfxGain.gain.setValueAtTime(sfxVol, t);
+    applyGains() {
+      if (!this.ctx || !this.masterGain || !this.musicGain || !this.sfxGain) return;
+      try {
+        const t = this.ctx.currentTime || 0;
+        const mVol = this.settings.masterEnabled ? (this.settings.masterVolume ?? 0.8) : 0;
+        const bgmVol = this.settings.musicEnabled ? (this.settings.musicVolume ?? 0.65) : 0;
+        const sfxVol = this.settings.sfxEnabled ? (this.settings.sfxVolume ?? 0.8) : 0;
+
+        if (this.masterGain.gain.setValueAtTime) {
+          this.masterGain.gain.setValueAtTime(mVol, t);
+          this.musicGain.gain.setValueAtTime(bgmVol, t);
+          this.sfxGain.gain.setValueAtTime(sfxVol, t);
+        } else {
+          this.masterGain.gain.value = mVol;
+          this.musicGain.gain.value = bgmVol;
+          this.sfxGain.gain.value = sfxVol;
+        }
+      } catch (e) {
+        // AudioParam fallback safety
+      }
     }
 
     // --- BGM EPIC MUSIC SYNTHESIZER ---
     startMusic() {
-      this.init();
-      if (!this.ctx) return;
+      if (!this.ctx) {
+        if (!this.isInitializing) {
+          this.init();
+        }
+        if (!this.ctx) return;
+      }
       if (this.musicPlaying) return;
 
       this.musicPlaying = true;
-      this.nextNoteTime = this.ctx.currentTime + 0.08;
+      this.nextNoteTime = (this.ctx.currentTime || 0) + 0.08;
       this.currentStep = 0;
       this.currentBar = 0;
-
-      if (this.schedulerTimer) clearInterval(this.schedulerTimer);
-      this.schedulerTimer = setInterval(() => {
-        this.scheduler();
-      }, 75);
     }
 
     stopMusic() {
@@ -143,13 +177,29 @@
       }
     }
 
-    scheduler() {
-      if (!this.ctx || !this.musicPlaying) return;
-      // Schedule audio ahead by 0.3s
-      while (this.nextNoteTime < this.ctx.currentTime + 0.3) {
-        this.scheduleStep(this.currentStep, this.nextNoteTime);
-        this.advanceStep();
+    // Called on each requestAnimationFrame inside gameLoop to schedule notes with sample-accurate Web Audio timing
+    update() {
+      if (!this.ctx || !this.musicPlaying || this.ctx.state === "suspended") return;
+      try {
+        const cur = this.ctx.currentTime || 0;
+        // If system lag occurred, fast-forward nextNoteTime so loop never spikes
+        if (this.nextNoteTime < cur - 0.5) {
+          this.nextNoteTime = cur;
+        }
+        const horizon = cur + 0.15;
+        let iter = 0;
+        while (this.nextNoteTime < horizon && iter < 4) {
+          iter++;
+          this.scheduleStep(this.currentStep, this.nextNoteTime);
+          this.advanceStep();
+        }
+      } catch (e) {
+        // Audio tick safety
       }
+    }
+
+    scheduler() {
+      this.update();
     }
 
     advanceStep() {
@@ -216,14 +266,13 @@
 
     synthSnare(time, gainVal) {
       try {
-        const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.035));
+        if (!this.snareBuffer) {
+          this.initSnareBuffer();
         }
+        if (!this.snareBuffer) return;
+
         const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
+        noise.buffer = this.snareBuffer;
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = "bandpass";
@@ -591,6 +640,106 @@
             });
             break;
           }
+          case "upgrade": {
+            const freqs = [349.23, 440.0, 523.25, 698.46];
+            freqs.forEach((freq, idx) => {
+              const startT = t + idx * 0.05;
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = "sine";
+              osc.frequency.setValueAtTime(freq, startT);
+              gain.gain.setValueAtTime(0.25, startT);
+              gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.18);
+              osc.connect(gain);
+              gain.connect(this.sfxGain);
+              osc.start(startT);
+              osc.stop(startT + 0.19);
+            });
+            break;
+          }
+          case "guard": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(440, t);
+            osc.frequency.exponentialRampToValueAtTime(554.37, t + 0.12);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.18);
+            break;
+          }
+          case "click": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(800, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.04);
+            break;
+          }
+          case "error": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(140, t);
+            osc.frequency.setValueAtTime(110, t + 0.08);
+            gain.gain.setValueAtTime(0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.2);
+            break;
+          }
+          case "ballista": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(850, t);
+            osc.frequency.exponentialRampToValueAtTime(220, t + 0.16);
+            gain.gain.setValueAtTime(0.4, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.16);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.16);
+            break;
+          }
+          case "flamethrower": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(220, t);
+            osc.frequency.linearRampToValueAtTime(140, t + 0.2);
+            gain.gain.setValueAtTime(0.25, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.2);
+            break;
+          }
+          case "catapult": {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(110, t);
+            osc.frequency.exponentialRampToValueAtTime(35, t + 0.4);
+            gain.gain.setValueAtTime(0.6, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            osc.start(t);
+            osc.stop(t + 0.4);
+            break;
+          }
         }
       } catch (e) {
         // audio context safety
@@ -598,6 +747,7 @@
     }
 
     setMasterVolume(val) {
+      if (this.isSyncingUI) return;
       this.settings.masterVolume = Math.max(0, Math.min(1, val));
       this.saveSettings();
       this.applyGains();
@@ -605,6 +755,7 @@
     }
 
     setMasterEnabled(bool) {
+      if (this.isSyncingUI) return;
       this.settings.masterEnabled = bool;
       this.saveSettings();
       this.applyGains();
@@ -614,6 +765,7 @@
     }
 
     setMusicVolume(val) {
+      if (this.isSyncingUI) return;
       this.settings.musicVolume = Math.max(0, Math.min(1, val));
       this.saveSettings();
       this.applyGains();
@@ -621,6 +773,7 @@
     }
 
     setMusicEnabled(bool) {
+      if (this.isSyncingUI) return;
       this.settings.musicEnabled = bool;
       this.saveSettings();
       this.applyGains();
@@ -633,6 +786,7 @@
     }
 
     setSfxVolume(val) {
+      if (this.isSyncingUI) return;
       this.settings.sfxVolume = Math.max(0, Math.min(1, val));
       this.saveSettings();
       this.applyGains();
@@ -640,6 +794,7 @@
     }
 
     setSfxEnabled(bool) {
+      if (this.isSyncingUI) return;
       this.settings.sfxEnabled = bool;
       this.saveSettings();
       this.applyGains();
@@ -647,18 +802,21 @@
     }
 
     setTowerSfxEnabled(bool) {
+      if (this.isSyncingUI) return;
       this.settings.towerSfxEnabled = bool;
       this.saveSettings();
       this.syncUI();
     }
 
     setEnemySfxEnabled(bool) {
+      if (this.isSyncingUI) return;
       this.settings.enemySfxEnabled = bool;
       this.saveSettings();
       this.syncUI();
     }
 
     resetDefaults() {
+      if (this.isSyncingUI) return;
       this.settings = {
         masterEnabled: true,
         masterVolume: 0.8,
@@ -678,39 +836,45 @@
     }
 
     syncUI() {
-      const s = this.settings;
-      const masterSlider = document.getElementById("slider-master-volume");
-      if (masterSlider) masterSlider.value = Math.round(s.masterVolume * 100);
-      const masterVal = document.getElementById("val-master-volume");
-      if (masterVal) masterVal.textContent = Math.round(s.masterVolume * 100) + "%";
+      if (this.isSyncingUI) return;
+      this.isSyncingUI = true;
+      try {
+        const s = this.settings;
+        const masterSlider = document.getElementById("slider-master-volume");
+        if (masterSlider) masterSlider.value = Math.round(s.masterVolume * 100);
+        const masterVal = document.getElementById("val-master-volume");
+        if (masterVal) masterVal.textContent = Math.round(s.masterVolume * 100) + "%";
 
-      const masterToggle = document.getElementById("toggle-master-sound");
-      if (masterToggle) masterToggle.checked = s.masterEnabled;
+        const masterToggle = document.getElementById("toggle-master-sound");
+        if (masterToggle) masterToggle.checked = s.masterEnabled;
 
-      const bgmSlider = document.getElementById("slider-bgm-volume");
-      if (bgmSlider) bgmSlider.value = Math.round(s.musicVolume * 100);
-      const bgmVal = document.getElementById("val-bgm-volume");
-      if (bgmVal) bgmVal.textContent = Math.round(s.musicVolume * 100) + "%";
+        const bgmSlider = document.getElementById("slider-bgm-volume");
+        if (bgmSlider) bgmSlider.value = Math.round(s.musicVolume * 100);
+        const bgmVal = document.getElementById("val-bgm-volume");
+        if (bgmVal) bgmVal.textContent = Math.round(s.musicVolume * 100) + "%";
 
-      const bgmToggle = document.getElementById("toggle-bgm");
-      if (bgmToggle) bgmToggle.checked = s.musicEnabled;
+        const bgmToggle = document.getElementById("toggle-bgm");
+        if (bgmToggle) bgmToggle.checked = s.musicEnabled;
 
-      const sfxSlider = document.getElementById("slider-sfx-volume");
-      if (sfxSlider) sfxSlider.value = Math.round(s.sfxVolume * 100);
-      const sfxVal = document.getElementById("val-sfx-volume");
-      if (sfxVal) sfxVal.textContent = Math.round(s.sfxVolume * 100) + "%";
+        const sfxSlider = document.getElementById("slider-sfx-volume");
+        if (sfxSlider) sfxSlider.value = Math.round(s.sfxVolume * 100);
+        const sfxVal = document.getElementById("val-sfx-volume");
+        if (sfxVal) sfxVal.textContent = Math.round(s.sfxVolume * 100) + "%";
 
-      const sfxToggle = document.getElementById("toggle-sfx");
-      if (sfxToggle) sfxToggle.checked = s.sfxEnabled;
+        const sfxToggle = document.getElementById("toggle-sfx");
+        if (sfxToggle) sfxToggle.checked = s.sfxEnabled;
 
-      const towerToggle = document.getElementById("toggle-tower-sfx");
-      if (towerToggle) towerToggle.checked = s.towerSfxEnabled;
+        const towerToggle = document.getElementById("toggle-tower-sfx");
+        if (towerToggle) towerToggle.checked = s.towerSfxEnabled;
 
-      const enemyToggle = document.getElementById("toggle-enemy-sfx");
-      if (enemyToggle) enemyToggle.checked = s.enemySfxEnabled;
+        const enemyToggle = document.getElementById("toggle-enemy-sfx");
+        if (enemyToggle) enemyToggle.checked = s.enemySfxEnabled;
 
-      const soundBtn = document.getElementById("btn-sound");
-      if (soundBtn) soundBtn.textContent = s.masterEnabled ? "🔊" : "🔇";
+        const soundBtn = document.getElementById("btn-sound");
+        if (soundBtn) soundBtn.textContent = s.masterEnabled ? "🔊" : "🔇";
+      } finally {
+        this.isSyncingUI = false;
+      }
     }
   }
 
@@ -2166,7 +2330,7 @@
       this.hoveredSlot = null;
       this.currentShopTab = "towers";
       this.isSimplifiedUI = false;
-      this.activeCategoryDrawer = null;
+      this.activeCategoryDrawer = "weapons";
 
       // Royal Field Army state (فيلق الجيش الملكي الميداني)
       this.allies = [];
@@ -2216,6 +2380,9 @@
       this.fogBands = [];
       this.weatherAlertTimeout = null;
 
+      this._boundGameLoop = this.gameLoop.bind(this);
+      this.rafId = null;
+
       this.initDimensions();
       this.initSlots();
       this.initWeatherSystem();
@@ -2225,16 +2392,37 @@
 
       // Start loop
       this.lastTime = performance.now();
-      requestAnimationFrame(this.gameLoop.bind(this));
+      if (this.rafId) cancelAnimationFrame(this.rafId);
+      this.rafId = requestAnimationFrame(this._boundGameLoop);
     }
 
     initDimensions() {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      this.dpr = dpr;
       this.width = window.innerWidth;
       this.height = window.innerHeight;
-      this.canvas.width = this.width * dpr;
-      this.canvas.height = this.height * dpr;
-      this.ctx.scale(dpr, dpr);
+      this.canvas.width = Math.round(this.width * dpr);
+      this.canvas.height = Math.round(this.height * dpr);
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      this.createBackgroundCache();
+    }
+
+    createBackgroundCache() {
+      try {
+        if (!this.bgCanvas) {
+          this.bgCanvas = document.createElement("canvas");
+        }
+        this.bgCanvas.width = Math.round(this.width * this.dpr);
+        this.bgCanvas.height = Math.round(this.height * this.dpr);
+        const bgCtx = this.bgCanvas.getContext("2d");
+        bgCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+        this.renderBattlefieldBackground(bgCtx);
+        this.renderCastle(bgCtx);
+      } catch (e) {
+        this.bgCanvas = null;
+      }
     }
 
     initSlots() {
@@ -2286,7 +2474,7 @@
       const h = this.height || 700;
       this.weatherParticles = [];
 
-      for (let i = 0; i < 110; i++) {
+      for (let i = 0; i < 32; i++) {
         this.weatherParticles.push({
           x: Math.random() * w,
           y: Math.random() * h,
@@ -2569,34 +2757,28 @@
         this.ctx.fillRect(0, 0, w, h);
       }
 
-      // 2. Weather particles rendering
+      // 2. Weather particles rendering (Optimized batched rendering)
       if (this.currentWeather === "rain") {
         this.ctx.save();
         this.ctx.strokeStyle = "rgba(174, 214, 241, 0.65)";
         this.ctx.lineWidth = 1.6;
         this.ctx.lineCap = "round";
+        this.ctx.beginPath();
         this.weatherParticles.forEach(p => {
-          this.ctx.beginPath();
           this.ctx.moveTo(p.x, p.y);
           this.ctx.lineTo(p.x - 5, p.y + (p.len || 18));
-          this.ctx.stroke();
         });
+        this.ctx.stroke();
         this.ctx.restore();
       } else if (this.currentWeather === "snow") {
         this.ctx.save();
+        this.ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+        this.ctx.beginPath();
         this.weatherParticles.forEach(p => {
-          this.ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha || 0.6})`;
-          this.ctx.beginPath();
+          this.ctx.moveTo(p.x + (p.size || 2.5), p.y);
           this.ctx.arc(p.x, p.y, p.size || 2.5, 0, Math.PI * 2);
-          this.ctx.fill();
         });
-
-        // Frosty corner vignette
-        const grad = this.ctx.createRadialGradient(w / 2, h / 2, h * 0.42, w / 2, h / 2, Math.max(w, h) * 0.68);
-        grad.addColorStop(0, "rgba(200, 235, 255, 0)");
-        grad.addColorStop(1, "rgba(180, 225, 255, 0.22)");
-        this.ctx.fillStyle = grad;
-        this.ctx.fillRect(0, 0, w, h);
+        this.ctx.fill();
         this.ctx.restore();
       } else if (this.currentWeather === "fog") {
         this.ctx.save();
@@ -2612,20 +2794,21 @@
         this.ctx.restore();
       } else if (this.currentWeather === "sandstorm") {
         this.ctx.save();
+        this.ctx.fillStyle = "rgba(243, 156, 18, 0.55)";
         this.weatherParticles.forEach(p => {
-          this.ctx.fillStyle = `rgba(243, 156, 18, ${p.alpha || 0.5})`;
           this.ctx.fillRect(p.x, p.y, (p.size || 2) * 2.2, p.size || 1.5);
         });
         this.ctx.restore();
       } else {
         // Clear sunny motes
         this.ctx.save();
-        this.weatherParticles.slice(0, 25).forEach(p => {
-          this.ctx.fillStyle = `rgba(255, 241, 118, ${p.alpha || 0.25})`;
-          this.ctx.beginPath();
+        this.ctx.fillStyle = "rgba(255, 241, 118, 0.3)";
+        this.ctx.beginPath();
+        this.weatherParticles.slice(0, 18).forEach(p => {
+          this.ctx.moveTo(p.x + (p.size || 2), p.y);
           this.ctx.arc(p.x, p.y, p.size || 2, 0, Math.PI * 2);
-          this.ctx.fill();
         });
+        this.ctx.fill();
         this.ctx.restore();
       }
 
@@ -2873,47 +3056,78 @@
     }
 
     updateHUD() {
-      document.getElementById("gold-value").textContent = Math.floor(this.gold);
-      document.getElementById("mana-value").textContent = Math.floor(this.mana);
-      document.getElementById("score-value").textContent = this.score;
-      document.getElementById("wave-number").textContent = this.currentWave;
-      document.getElementById("enemy-count").textContent = this.enemies.length + this.waveEnemiesQueue.length;
+      const gVal = Math.floor(this.gold);
+      if (this._lastGoldVal !== gVal) {
+        this._lastGoldVal = gVal;
+        const el = document.getElementById("gold-value");
+        if (el) el.textContent = gVal;
+      }
 
-      // Castle HP & Dynamic SVG Status
-      const hpPct = Math.max(0, Math.min(100, (this.castleHp / this.castleMaxHp) * 100));
-      const fillEl = document.getElementById("castle-health-fill");
-      if (fillEl) fillEl.style.width = hpPct + "%";
-      const hpTextEl = document.getElementById("castle-hp-text");
-      if (hpTextEl) hpTextEl.textContent = `${Math.ceil(this.castleHp)} / ${this.castleMaxHp}`;
+      const mVal = Math.floor(this.mana);
+      if (this._lastManaVal !== mVal) {
+        this._lastManaVal = mVal;
+        const el = document.getElementById("mana-value");
+        if (el) el.textContent = mVal;
+      }
 
-      const panel = document.getElementById("castle-health-panel");
-      const shieldSvg = document.getElementById("castle-shield-svg");
-      const vitalitySvg = document.getElementById("castle-vitality-svg");
+      if (this._lastScoreVal !== this.score) {
+        this._lastScoreVal = this.score;
+        const el = document.getElementById("score-value");
+        if (el) el.textContent = this.score;
+      }
 
-      if (hpPct < 25) {
-        if (fillEl) fillEl.style.background = "linear-gradient(90deg, #c0392b, #ff4757)";
-        if (panel) {
-          panel.classList.remove("state-safe", "state-warning");
-          panel.classList.add("state-danger");
+      if (this._lastWaveVal !== this.currentWave) {
+        this._lastWaveVal = this.currentWave;
+        const el = document.getElementById("wave-number");
+        if (el) el.textContent = this.currentWave;
+      }
+
+      const eCount = this.enemies.length + this.waveEnemiesQueue.length;
+      if (this._lastEnemyCount !== eCount) {
+        this._lastEnemyCount = eCount;
+        const el = document.getElementById("enemy-count");
+        if (el) el.textContent = eCount;
+      }
+
+      // Castle HP & Dynamic SVG Status (Cached so DOM reflow only occurs on HP change)
+      const roundedHp = Math.ceil(this.castleHp);
+      if (this._lastCastleHp !== roundedHp) {
+        this._lastCastleHp = roundedHp;
+        const hpPct = Math.max(0, Math.min(100, (this.castleHp / this.castleMaxHp) * 100));
+        const fillEl = document.getElementById("castle-health-fill");
+        if (fillEl) fillEl.style.width = hpPct + "%";
+        const hpTextEl = document.getElementById("castle-hp-text");
+        if (hpTextEl) hpTextEl.textContent = `${roundedHp} / ${this.castleMaxHp}`;
+
+        const panel = document.getElementById("castle-health-panel");
+        const shieldSvg = document.getElementById("castle-shield-svg");
+        const vitalitySvg = document.getElementById("castle-vitality-svg");
+
+        if (hpPct < 25) {
+          if (fillEl) fillEl.style.background = "linear-gradient(90deg, #c0392b, #ff4757)";
+          if (panel) {
+            panel.classList.remove("state-safe", "state-warning");
+            panel.classList.add("state-danger");
+          }
+          if (shieldSvg) shieldSvg.setAttribute("data-state", "danger");
+          if (vitalitySvg) vitalitySvg.setAttribute("data-state", "danger");
+        } else if (hpPct < 55) {
+          if (fillEl) fillEl.style.background = "linear-gradient(90deg, #d35400, #f39c12)";
+          if (panel) {
+            panel.classList.remove("state-safe", "state-danger");
+            panel.classList.add("state-warning");
+          }
+          if (shieldSvg) shieldSvg.setAttribute("data-state", "warning");
+          if (vitalitySvg) vitalitySvg.setAttribute("data-state", "warning");
+        } else {
+          if (fillEl) fillEl.style.background = "linear-gradient(90deg, #27ae60, #2ecc71)";
+          if (panel) {
+            panel.classList.remove("state-warning", "state-danger");
+            panel.classList.add("state-safe");
+          }
+          if (shieldSvg) shieldSvg.setAttribute("data-state", "safe");
+          if (vitalitySvg) vitalitySvg.setAttribute("data-state", "safe");
         }
-        if (shieldSvg) shieldSvg.setAttribute("data-state", "danger");
-        if (vitalitySvg) vitalitySvg.setAttribute("data-state", "danger");
-      } else if (hpPct < 55) {
-        if (fillEl) fillEl.style.background = "linear-gradient(90deg, #d35400, #f39c12)";
-        if (panel) {
-          panel.classList.remove("state-safe", "state-danger");
-          panel.classList.add("state-warning");
-        }
-        if (shieldSvg) shieldSvg.setAttribute("data-state", "warning");
-        if (vitalitySvg) vitalitySvg.setAttribute("data-state", "warning");
-      } else {
-        if (fillEl) fillEl.style.background = "linear-gradient(90deg, #27ae60, #2ecc71)";
-        if (panel) {
-          panel.classList.remove("state-warning", "state-danger");
-          panel.classList.add("state-safe");
-        }
-        if (shieldSvg) shieldSvg.setAttribute("data-state", "safe");
-        if (vitalitySvg) vitalitySvg.setAttribute("data-state", "safe");
       }
 
       // Wave Banner Visibility
@@ -2929,22 +3143,22 @@
       if (bossHud) {
         if (this.activeBoss && this.activeBoss.hp > 0 && this.enemies.includes(this.activeBoss)) {
           const boss = this.activeBoss;
-          const hpPct = Math.max(0, Math.min(100, (boss.hp / boss.maxHp) * 100));
+          const bHpPct = Math.max(0, Math.min(100, (boss.hp / boss.maxHp) * 100));
           const hpBar = document.getElementById("boss-hp-bar");
           const hpLag = document.getElementById("boss-hp-lag");
           const hpVal = document.getElementById("boss-hp-val");
           const phaseBadge = document.getElementById("boss-phase-badge");
 
-          if (hpBar) hpBar.style.width = hpPct + "%";
+          if (hpBar) hpBar.style.width = bHpPct + "%";
           if (hpLag) {
             const currentLag = parseFloat(hpLag.style.width) || 100;
-            if (currentLag > hpPct) {
-              hpLag.style.width = Math.max(hpPct, currentLag - 0.4) + "%";
+            if (currentLag > bHpPct) {
+              hpLag.style.width = Math.max(bHpPct, currentLag - 0.4) + "%";
             } else {
-              hpLag.style.width = hpPct + "%";
+              hpLag.style.width = bHpPct + "%";
             }
           }
-          if (hpVal) hpVal.textContent = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)} (${Math.ceil(hpPct)}%)`;
+          if (hpVal) hpVal.textContent = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)} (${Math.ceil(bHpPct)}%)`;
           if (phaseBadge) {
             if (boss.enraged) {
               phaseBadge.textContent = "⚡ ENRAGED!";
@@ -2969,28 +3183,41 @@
         }
       }
 
-      // Shop affordability
-      document.querySelectorAll(".weapon-card").forEach(card => {
-        const cost = parseInt(card.getAttribute("data-cost"), 10);
-        if (this.gold < cost) {
-          card.classList.add("disabled");
-        } else {
-          card.classList.remove("disabled");
+      // Shop affordability (only update DOM when integer gold changes)
+      if (this._lastAffordGold !== gVal) {
+        this._lastAffordGold = gVal;
+        if (!this._cachedWeaponCards || this._cachedWeaponCards.length === 0) {
+          this._cachedWeaponCards = document.querySelectorAll(".weapon-card");
         }
-      });
+        this._cachedWeaponCards.forEach(card => {
+          const cost = parseInt(card.getAttribute("data-cost"), 10);
+          if (gVal < cost) {
+            card.classList.add("disabled");
+          } else {
+            card.classList.remove("disabled");
+          }
+        });
 
-      document.querySelectorAll(".army-card").forEach(card => {
-        const cost = parseInt(card.getAttribute("data-cost"), 10);
-        if (this.gold < cost) {
-          card.classList.add("disabled");
-        } else {
-          card.classList.remove("disabled");
+        if (!this._cachedArmyCards || this._cachedArmyCards.length === 0) {
+          this._cachedArmyCards = document.querySelectorAll(".army-card");
         }
-      });
+        this._cachedArmyCards.forEach(card => {
+          const cost = parseInt(card.getAttribute("data-cost"), 10);
+          if (gVal < cost) {
+            card.classList.add("disabled");
+          } else {
+            card.classList.remove("disabled");
+          }
+        });
+      }
 
-      const armyLiveBadge = document.getElementById("army-live-badge");
-      if (armyLiveBadge) {
-        armyLiveBadge.textContent = this.allies ? this.allies.length : 0;
+      const aCount = this.allies ? this.allies.length : 0;
+      if (this._lastArmyCount !== aCount) {
+        this._lastArmyCount = aCount;
+        const armyLiveBadge = document.getElementById("army-live-badge");
+        if (armyLiveBadge) {
+          armyLiveBadge.textContent = aCount;
+        }
       }
 
       // Spells status
@@ -3093,6 +3320,24 @@
       }
     }
 
+    bindTap(el, handler) {
+      if (!el) return;
+      let lastTapTime = 0;
+      const onAction = (e) => {
+        const now = performance.now();
+        if (now - lastTapTime < 220) return;
+        lastTapTime = now;
+        handler(e);
+      };
+      el.addEventListener("pointerdown", e => {
+        if (e.button !== undefined && e.button !== 0) return;
+        onAction(e);
+      });
+      el.addEventListener("click", e => {
+        onAction(e);
+      });
+    }
+
     initEvents() {
       window.addEventListener("resize", () => {
         this.initDimensions();
@@ -3102,14 +3347,16 @@
       // Main War Category Buttons (الأسلحة & الجيش)
       const btnWpnCat = document.getElementById("btn-category-weapons");
       if (btnWpnCat) {
-        btnWpnCat.addEventListener("click", () => {
+        this.bindTap(btnWpnCat, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.toggleWarCategory("weapons");
         });
       }
 
       const btnArmyCat = document.getElementById("btn-category-army");
       if (btnArmyCat) {
-        btnArmyCat.addEventListener("click", () => {
+        this.bindTap(btnArmyCat, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.toggleWarCategory("army");
         });
       }
@@ -3117,14 +3364,16 @@
       // Drawer Close Buttons (✕)
       const btnCloseWpn = document.getElementById("btn-close-weapons-drawer");
       if (btnCloseWpn) {
-        btnCloseWpn.addEventListener("click", () => {
+        this.bindTap(btnCloseWpn, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.closeWarDrawer();
         });
       }
 
       const btnCloseArmy = document.getElementById("btn-close-army-drawer");
       if (btnCloseArmy) {
-        btnCloseArmy.addEventListener("click", () => {
+        this.bindTap(btnCloseArmy, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.closeWarDrawer();
         });
       }
@@ -3132,14 +3381,16 @@
       // Quick War Command Buttons (تجهيز فوري واستدعاء فوري)
       const quickWpnBtn = document.getElementById("btn-quick-weapon");
       if (quickWpnBtn) {
-        quickWpnBtn.addEventListener("click", () => {
+        this.bindTap(quickWpnBtn, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.quickDeployWeapon();
         });
       }
 
       const quickArmyBtn = document.getElementById("btn-quick-army");
       if (quickArmyBtn) {
-        quickArmyBtn.addEventListener("click", () => {
+        this.bindTap(quickArmyBtn, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.quickDeployArmy();
         });
       }
@@ -3147,15 +3398,16 @@
       // Formation Toggle Button (تغيير التشكيل القتالي)
       const formationBtn = document.getElementById("btn-formation");
       if (formationBtn) {
-        formationBtn.addEventListener("click", () => {
+        this.bindTap(formationBtn, (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
           this.toggleFormation();
         });
       }
 
       // Army Unit Recruitment Cards
       document.querySelectorAll(".army-card").forEach(card => {
-        card.addEventListener("click", e => {
-          e.stopPropagation();
+        this.bindTap(card, e => {
+          if (e && e.stopPropagation) e.stopPropagation();
           const uType = card.getAttribute("data-unit");
           this.recruitUnit(uType);
         });
@@ -3163,42 +3415,20 @@
 
       // Direct deploy buttons on weapon cards (نشر فوري في القلعة بنقرة واحدة)
       document.querySelectorAll(".btn-card-direct-deploy").forEach(btn => {
-        btn.addEventListener("click", e => {
-          e.stopPropagation();
+        this.bindTap(btn, e => {
+          if (e && e.stopPropagation) e.stopPropagation();
           const wType = btn.getAttribute("data-weapon");
           this.deploySpecificWeapon(wType);
         });
       });
 
-      // Shop card selection (Towers manual placement mode)
+      // Shop card selection (Towers deployment - direct deploy to castle)
       document.querySelectorAll(".weapon-card").forEach(card => {
-        card.addEventListener("click", e => {
-          e.stopPropagation();
+        this.bindTap(card, e => {
+          if (e && e.stopPropagation) e.stopPropagation();
           const wType = card.getAttribute("data-weapon");
-          const template = WEAPON_TYPES[wType];
-          if (!template) return;
-
-          if (this.gold < template.cost) {
-            this.sound.play("error");
-            const wName = (I18N[this.lang] && I18N[this.lang][template.nameKey]) || template.id;
-            this.createFloatingText(
-              this.lang === "ar" ? `تحتاج ${template.cost} 🪙 لتجهيز ${wName}! (الذهب الحالي: ${this.gold} 🪙)` : `Need ${template.cost} 🪙 for ${wName}!`,
-              this.width * 0.35,
-              this.height * 0.5,
-              "#e74c3c",
-              1.2
-            );
-            return;
-          }
-
-          this.selectedShopWeapon = template;
-          this.lastWeaponSelectTime = performance.now();
-          this.inspectingTower = null;
-          this.closeWeaponModal();
-          this.closeWarDrawer(); // Close drawer so player sees the wall slots clearly!
-          this.showPlacementGuide(template);
-          this.sound.play("build");
-          this.updateShopCards();
+          if (!wType) return;
+          this.deploySpecificWeapon(wType);
         });
       });
 
@@ -3670,18 +3900,20 @@
     }
 
     handlePointerDown(px, py, e) {
-      this.sound.init();
+      try {
+        this.sound.init();
+      } catch (err) {}
 
       // 1. Check if tapping a friendly soldier to drag & drop
       if (this.allies && this.allies.length > 0) {
         for (let i = this.allies.length - 1; i >= 0; i--) {
           const ally = this.allies[i];
-          if (ally.hp > 0 && Math.hypot(ally.x - px, ally.y - py) <= ally.radius + 14) {
+          if (ally.hp > 0 && Math.hypot(ally.x - px, ally.y - py) <= ally.radius + 18) {
             this.draggingAlly = ally;
             this.dragOffset.x = ally.x - px;
             this.dragOffset.y = ally.y - py;
             ally.isSelected = true;
-            this.sound.play("build");
+            try { this.sound.play("build"); } catch (e) {}
             this.createShockwave(ally.x, ally.y, "#3498db", 30, 0.22, 2.0);
             return;
           }
@@ -3690,29 +3922,24 @@
 
       // 2. If a weapon is selected from the shop:
       if (this.selectedShopWeapon) {
-        // Protect against touch/pointer leakage right after opening/selecting from card (350ms window)
-        if (performance.now() - (this.lastWeaponSelectTime || 0) < 350) {
-          return;
-        }
-
         const template = this.selectedShopWeapon;
-        const castleMaxX = this.width * 0.36;
+        const castleMaxX = this.width * 0.38;
 
-        // A. Direct slot hit with generous hit radius (up to 65px radius!)
+        // A. Direct slot hit with generous hit radius (up to 75px radius!)
         let targetSlot = null;
         let minSlotDist = Infinity;
         for (const slot of this.slots) {
           const dist = Math.hypot(slot.x - px, slot.y - py);
           if (dist < minSlotDist) {
             minSlotDist = dist;
-            if (dist <= 65) {
+            if (dist <= 75) {
               targetSlot = slot;
             }
           }
         }
 
-        // B. If user tapped on/near the castle area (px <= castleMaxX + 50) or within 120px of any slot:
-        if (!targetSlot && (px <= castleMaxX + 50 || minSlotDist <= 120)) {
+        // B. If user tapped on/near the castle area (px <= castleMaxX + 70) or within 140px of any slot:
+        if (!targetSlot && (px <= castleMaxX + 70 || minSlotDist <= 140)) {
           // Find the closest empty slot to where they tapped!
           const emptySlots = this.slots.filter(s => !s.tower);
           if (emptySlots.length > 0) {
@@ -3734,7 +3961,7 @@
               this.deploySpecificWeapon(template.id, otherEmpty[0]);
               return;
             } else {
-              this.sound.play("error");
+              try { this.sound.play("error"); } catch (e) {}
               this.createFloatingText(
                 this.lang === "ar" ? "جميع مواقع القلعة ممتلئة! يمكنك ترقية الأسلحة ⭐" : "All slots full! Tap to upgrade ⭐",
                 this.width * 0.35,
@@ -3746,16 +3973,18 @@
             }
           }
         } else {
-          // User tapped open battlefield far from castle
-          // DO NOT CANCEL PLACEMENT! Guide the user!
-          this.sound.play("error");
-          this.createFloatingText(
-            this.lang === "ar" ? "اضغط على القلعة ومواقع الأبراج (+) لنشر السلاح! 🏰" : "Tap on castle wall or (+) slots to place weapon! 🏰",
-            this.width * 0.35,
-            this.height * 0.5,
-            "#00cec9",
-            1.2
-          );
+          // User tapped open field: automatically deploy to best open slot!
+          const deployed = this.deploySpecificWeapon(template.id);
+          if (!deployed) {
+            try { this.sound.play("error"); } catch (e) {}
+            this.createFloatingText(
+              this.lang === "ar" ? "اضغط على القلعة ومواقع الأبراج (+) لنشر السلاح! 🏰" : "Tap on castle wall or (+) slots to place weapon! 🏰",
+              this.width * 0.35,
+              this.height * 0.5,
+              "#00cec9",
+              1.2
+            );
+          }
           return;
         }
       }
@@ -3764,7 +3993,7 @@
       let clickedSlot = null;
       for (const slot of this.slots) {
         const dist = Math.hypot(slot.x - px, slot.y - py);
-        if (dist <= slot.radius * 1.8) {
+        if (dist <= Math.max(48, slot.radius * 2.2)) {
           clickedSlot = slot;
           break;
         }
@@ -3910,7 +4139,7 @@
 
       slot.tower = tower;
       this.towers.push(tower);
-      this.sound.play("build");
+      try { this.sound.play("build"); } catch (e) {}
       this.createExplosion(slot.x, slot.y, "#f1c40f", 25);
       this.createFloatingText(`-${template.cost} 🪙`, slot.x, slot.y - 30, "#e74c3c");
       this.updateHUD();
@@ -4690,11 +4919,16 @@
 
     // --- WAR CATEGORY CONTROLS (نظام فئات الحرب المنظم: الأسلحة والجيش) ---
     toggleWarCategory(category) {
-      if (this.activeCategoryDrawer === category) {
-        this.closeWarDrawer();
-        return;
+      if (this.activeCategoryDrawer !== category) {
+        this.openWarDrawer(category);
+      } else {
+        // إذا كان القسم مفتوحاً بالفعل، الضغط على الزر ينفذ التجهيز/الاستدعاء الفوري المباشر!
+        if (category === "weapons") {
+          this.quickDeployWeapon();
+        } else if (category === "army") {
+          this.quickDeployArmy();
+        }
       }
-      this.openWarDrawer(category);
     }
 
     openWarDrawer(category) {
@@ -4723,7 +4957,7 @@
         if (btnArmy) btnArmy.classList.remove("active");
         if (wpnIndicator) wpnIndicator.textContent = "▴";
         if (armyIndicator) armyIndicator.textContent = "▾";
-        this.sound.play("upgrade");
+        try { this.sound.play("upgrade"); } catch (e) {}
       } else if (category === "army") {
         if (armyPanel) {
           armyPanel.style.display = "flex";
@@ -4737,7 +4971,7 @@
         if (btnWpn) btnWpn.classList.remove("active");
         if (armyIndicator) armyIndicator.textContent = "▴";
         if (wpnIndicator) wpnIndicator.textContent = "▾";
-        this.sound.play("guard");
+        try { this.sound.play("guard"); } catch (e) {}
       }
 
       this.updateShopCards();
@@ -4766,7 +5000,7 @@
       if (btnArmy) btnArmy.classList.remove("active");
       if (wpnIndicator) wpnIndicator.textContent = "▾";
       if (armyIndicator) armyIndicator.textContent = "▾";
-      this.sound.play("click");
+      try { this.sound.play("click"); } catch (e) {}
     }
 
     // --- ROYAL FIELD ARMY LOGIC (فيلق الجيش الملكي الميداني) ---
@@ -4913,8 +5147,14 @@
       this.allies.push(ally);
       this.applyFormationPositions();
 
-      this.sound.play("guard_horn");
+      try {
+        this.sound.play("troop_recruit");
+      } catch (e) {}
       this.createShockwave(spawnX, spawnY, tmpl.color, 45, 0.3, 2.5);
+
+      const unitLabel = this.lang === "ar" ? tmpl.nameAr : tmpl.nameEn;
+      this.createFloatingText(`+${tmpl.icon} ${unitLabel}!`, spawnX + 25, spawnY - 25, "#2ecc71", 1.25);
+      this.updateHUD();
 
       for (let i = 0; i < 10; i++) {
         this.particles.push({
@@ -5750,15 +5990,22 @@
 
     // --- GAME LOOP & UPDATES ---
     gameLoop(now) {
-      const dt = Math.min((now - this.lastTime) / 1000, 0.1) * this.speed;
+      const delta = (now - this.lastTime) / 1000;
+      const dt = Math.min(Math.max(delta, 0), 0.05) * this.speed;
       this.lastTime = now;
+
+      // Update procedural BGM synthesizer clock safely
+      if (this.sound) {
+        this.sound.update();
+      }
 
       if (!this.isPaused && !this.isGameOver) {
         this.update(dt);
       }
 
       this.render();
-      requestAnimationFrame(this.gameLoop.bind(this));
+
+      this.rafId = requestAnimationFrame(this._boundGameLoop);
     }
 
     update(dt) {
@@ -5828,8 +6075,12 @@
       // Update Royal Field Army
       this.updateAllies(dt);
 
-      // Periodically refresh HUD
-      this.updateHUD();
+      // Periodically refresh HUD (throttled to ~100ms instead of every frame to eliminate layout thrashing)
+      this.hudTimer = (this.hudTimer || 0) + dt;
+      if (this.hudTimer >= 0.1) {
+        this.hudTimer = 0;
+        this.updateHUD();
+      }
     }
 
     updateEnemies(dt) {
@@ -7202,9 +7453,16 @@
         this.ctx.translate(ox, oy);
       }
 
-      this.renderBattlefieldBackground();
+      // Fast single-blit draw of pre-rendered static background & castle!
+      if (this.bgCanvas) {
+        this.ctx.drawImage(this.bgCanvas, 0, 0, this.width, this.height);
+      } else {
+        this.renderBattlefieldBackground(this.ctx);
+        this.renderCastle(this.ctx);
+      }
+      this.renderCastleTorches(this.ctx);
+
       this.renderGroundHazards();
-      this.renderCastle();
       this.renderGuards();
       this.renderSlots();
       this.renderTowers();
@@ -7223,108 +7481,108 @@
       this.ctx.restore();
     }
 
-    renderBattlefieldBackground() {
+    renderBattlefieldBackground(ctx = this.ctx) {
       const w = this.width;
       const h = this.height;
 
       // 1. Natural Medieval Terrain (مروج وتربة ميدان المعركة الطبيعية)
-      const bgGrad = this.ctx.createLinearGradient(0, 0, 0, h);
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
       bgGrad.addColorStop(0, "#193524");
       bgGrad.addColorStop(0.25, "#224730");
       bgGrad.addColorStop(0.5, "#284f36");
       bgGrad.addColorStop(0.75, "#21442e");
       bgGrad.addColorStop(1, "#183222");
-      this.ctx.fillStyle = bgGrad;
-      this.ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
 
       // Subtle grass tufts and field terrain variation
-      this.ctx.fillStyle = "rgba(38, 77, 52, 0.4)";
+      ctx.fillStyle = "rgba(38, 77, 52, 0.4)";
       for (let i = 0; i < 24; i++) {
         const gx = ((i * 137) % w);
         const gy = ((i * 89) % h);
         if (gy < h * 0.35 || gy > h * 0.65) {
-          this.ctx.beginPath();
-          this.ctx.ellipse(gx, gy, 18, 8, 0, 0, Math.PI * 2);
-          this.ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(gx, gy, 18, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
       // 2. Wide Natural Military Highway (طريق عسكري ترابي وحجري طبيعي وأنيق)
       // Layer A: Wide Earth / Soil Shoulder (كتف الطريق والتربة المحيطة)
-      this.ctx.strokeStyle = "#5d4037";
-      this.ctx.lineWidth = 100;
-      this.ctx.lineCap = "round";
-      this.ctx.lineJoin = "round";
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.50);
-      this.ctx.lineTo(w * 0.75, h * 0.50);
-      this.ctx.lineTo(w * 0.50, h * 0.50);
-      this.ctx.lineTo(w * 0.285, h * 0.50);
-      this.ctx.stroke();
+      ctx.strokeStyle = "#5d4037";
+      ctx.lineWidth = 100;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.50);
+      ctx.lineTo(w * 0.75, h * 0.50);
+      ctx.lineTo(w * 0.50, h * 0.50);
+      ctx.lineTo(w * 0.285, h * 0.50);
+      ctx.stroke();
 
       // Layer B: Packed Clay, Gravel & Sandy Earth Layer (جسم الطريق الرئيسي من الحصى والتربة الممهدة)
-      this.ctx.strokeStyle = "#8d6e63";
-      this.ctx.lineWidth = 80;
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.50);
-      this.ctx.lineTo(w * 0.75, h * 0.50);
-      this.ctx.lineTo(w * 0.50, h * 0.50);
-      this.ctx.lineTo(w * 0.285, h * 0.50);
-      this.ctx.stroke();
+      ctx.strokeStyle = "#8d6e63";
+      ctx.lineWidth = 80;
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.50);
+      ctx.lineTo(w * 0.75, h * 0.50);
+      ctx.lineTo(w * 0.50, h * 0.50);
+      ctx.lineTo(w * 0.285, h * 0.50);
+      ctx.stroke();
 
       // Layer C: Compacted Stone & Silt Center (طبقة السطح الحجرية الدافئة)
-      this.ctx.strokeStyle = "#a1887f";
-      this.ctx.lineWidth = 58;
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.50);
-      this.ctx.lineTo(w * 0.75, h * 0.50);
-      this.ctx.lineTo(w * 0.50, h * 0.50);
-      this.ctx.lineTo(w * 0.285, h * 0.50);
-      this.ctx.stroke();
+      ctx.strokeStyle = "#a1887f";
+      ctx.lineWidth = 58;
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.50);
+      ctx.lineTo(w * 0.75, h * 0.50);
+      ctx.lineTo(w * 0.50, h * 0.50);
+      ctx.lineTo(w * 0.285, h * 0.50);
+      ctx.stroke();
 
       // Layer D: Cobblestone Paving Core (رصف الحجارة القديمة في قلب الطريق)
-      this.ctx.strokeStyle = "#bcaaa4";
-      this.ctx.lineWidth = 36;
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.50);
-      this.ctx.lineTo(w * 0.75, h * 0.50);
-      this.ctx.lineTo(w * 0.50, h * 0.50);
-      this.ctx.lineTo(w * 0.285, h * 0.50);
-      this.ctx.stroke();
+      ctx.strokeStyle = "#bcaaa4";
+      ctx.lineWidth = 36;
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.50);
+      ctx.lineTo(w * 0.75, h * 0.50);
+      ctx.lineTo(w * 0.50, h * 0.50);
+      ctx.lineTo(w * 0.285, h * 0.50);
+      ctx.stroke();
 
       // Layer E: Medieval Cobblestones Texture & Flagstones (نقوش وبلاطات الحجارة الممهدة)
-      this.ctx.strokeStyle = "rgba(78, 52, 46, 0.35)";
-      this.ctx.lineWidth = 2;
-      this.ctx.setLineDash([12, 14]);
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.48);
-      this.ctx.lineTo(w * 0.285, h * 0.48);
-      this.ctx.moveTo(w * 1.05, h * 0.52);
-      this.ctx.lineTo(w * 0.285, h * 0.52);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(78, 52, 46, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([12, 14]);
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.48);
+      ctx.lineTo(w * 0.285, h * 0.48);
+      ctx.moveTo(w * 1.05, h * 0.52);
+      ctx.lineTo(w * 0.285, h * 0.52);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // Layer F: Cart Wheel Ruts (أخاديد عجلات العربات والخيول)
-      this.ctx.strokeStyle = "rgba(62, 39, 35, 0.45)";
-      this.ctx.lineWidth = 3.5;
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.46);
-      this.ctx.lineTo(w * 0.285, h * 0.47);
-      this.ctx.moveTo(w * 1.05, h * 0.54);
-      this.ctx.lineTo(w * 0.285, h * 0.53);
-      this.ctx.stroke();
+      ctx.strokeStyle = "rgba(62, 39, 35, 0.45)";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.46);
+      ctx.lineTo(w * 0.285, h * 0.47);
+      ctx.moveTo(w * 1.05, h * 0.54);
+      ctx.lineTo(w * 0.285, h * 0.53);
+      ctx.stroke();
 
       // Layer G: Stone Curbs & Borders along highway edges (أحجار حواف الطريق الجانبية)
-      this.ctx.strokeStyle = "rgba(189, 189, 189, 0.65)";
-      this.ctx.lineWidth = 3;
-      this.ctx.setLineDash([8, 10]);
-      this.ctx.beginPath();
-      this.ctx.moveTo(w * 1.05, h * 0.42);
-      this.ctx.lineTo(w * 0.35, h * 0.43);
-      this.ctx.moveTo(w * 1.05, h * 0.58);
-      this.ctx.lineTo(w * 0.35, h * 0.57);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(189, 189, 189, 0.65)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 10]);
+      ctx.beginPath();
+      ctx.moveTo(w * 1.05, h * 0.42);
+      ctx.lineTo(w * 0.35, h * 0.43);
+      ctx.moveTo(w * 1.05, h * 0.58);
+      ctx.lineTo(w * 0.35, h * 0.57);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // 3. Grand Battle Arena Plaza (ساحة المعركة ورصف الحجارة الملكية أمام القلعة)
       const plazaX = w * 0.38;
@@ -7332,32 +7590,32 @@
       const plazaR = 48;
 
       // Outer stone ring
-      this.ctx.fillStyle = "#6d4c41";
-      this.ctx.beginPath();
-      this.ctx.arc(plazaX, plazaY, plazaR + 6, 0, Math.PI * 2);
-      this.ctx.fill();
+      ctx.fillStyle = "#6d4c41";
+      ctx.beginPath();
+      ctx.arc(plazaX, plazaY, plazaR + 6, 0, Math.PI * 2);
+      ctx.fill();
 
       // Paved flagstone plaza
-      this.ctx.fillStyle = "#8d6e63";
-      this.ctx.beginPath();
-      this.ctx.arc(plazaX, plazaY, plazaR, 0, Math.PI * 2);
-      this.ctx.fill();
+      ctx.fillStyle = "#8d6e63";
+      ctx.beginPath();
+      ctx.arc(plazaX, plazaY, plazaR, 0, Math.PI * 2);
+      ctx.fill();
 
-      this.ctx.strokeStyle = "#d4ac0d";
-      this.ctx.lineWidth = 2.5;
-      this.ctx.beginPath();
-      this.ctx.arc(plazaX, plazaY, plazaR - 6, 0, Math.PI * 2);
-      this.ctx.stroke();
+      ctx.strokeStyle = "#d4ac0d";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(plazaX, plazaY, plazaR - 6, 0, Math.PI * 2);
+      ctx.stroke();
 
       // Carved battle compass crest
-      this.ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
-      this.ctx.lineWidth = 1.5;
-      this.ctx.beginPath();
-      this.ctx.moveTo(plazaX - plazaR + 10, plazaY);
-      this.ctx.lineTo(plazaX + plazaR - 10, plazaY);
-      this.ctx.moveTo(plazaX, plazaY - plazaR + 10);
-      this.ctx.lineTo(plazaX, plazaY + plazaR - 10);
-      this.ctx.stroke();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(plazaX - plazaR + 10, plazaY);
+      ctx.lineTo(plazaX + plazaR - 10, plazaY);
+      ctx.moveTo(plazaX, plazaY - plazaR + 10);
+      ctx.lineTo(plazaX, plazaY + plazaR - 10);
+      ctx.stroke();
 
       // 4. Roadside Torches & Warm Lantern Posts (أعمدة مشاعل تضيء الطريق بحرارة المعركة)
       const torchSpots = [
@@ -7371,204 +7629,211 @@
 
       torchSpots.forEach(t => {
         // Wooden post
-        this.ctx.fillStyle = "#3e2723";
-        this.ctx.fillRect(t.x - 2.5, t.y - 12, 5, 14);
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(t.x - 2.5, t.y - 12, 5, 14);
 
         // Warm torch glow
-        const glow = this.ctx.createRadialGradient(t.x, t.y - 12, 1, t.x, t.y - 12, 16);
+        const glow = ctx.createRadialGradient(t.x, t.y - 12, 1, t.x, t.y - 12, 16);
         glow.addColorStop(0, "rgba(255, 167, 38, 0.8)");
         glow.addColorStop(0.5, "rgba(245, 124, 0, 0.35)");
         glow.addColorStop(1, "rgba(230, 81, 0, 0)");
-        this.ctx.fillStyle = glow;
-        this.ctx.beginPath();
-        this.ctx.arc(t.x, t.y - 12, 16, 0, Math.PI * 2);
-        this.ctx.fill();
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y - 12, 16, 0, Math.PI * 2);
+        ctx.fill();
 
         // Fire flame core
-        this.ctx.fillStyle = "#ffeb3b";
-        this.ctx.beginPath();
-        this.ctx.arc(t.x, t.y - 12, 3, 0, Math.PI * 2);
-        this.ctx.fill();
+        ctx.fillStyle = "#ffeb3b";
+        ctx.beginPath();
+        ctx.arc(t.x, t.y - 12, 3, 0, Math.PI * 2);
+        ctx.fill();
       });
 
       // 5. Castle Moat / Water Canal
       const moatX = w * 0.285;
-      const moatGrad = this.ctx.createLinearGradient(moatX - 25, 0, moatX + 25, 0);
+      const moatGrad = ctx.createLinearGradient(moatX - 25, 0, moatX + 25, 0);
       moatGrad.addColorStop(0, "#0d2b45");
       moatGrad.addColorStop(0.5, "#203a43");
       moatGrad.addColorStop(1, "#0f2027");
-      this.ctx.fillStyle = moatGrad;
-      this.ctx.fillRect(moatX - 18, 0, 36, h);
+      ctx.fillStyle = moatGrad;
+      ctx.fillRect(moatX - 18, 0, 36, h);
 
       // Water ripples
-      this.ctx.strokeStyle = "rgba(79, 195, 247, 0.35)";
-      this.ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(79, 195, 247, 0.35)";
+      ctx.lineWidth = 1.5;
       for (let y = 15; y < h; y += 30) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(moatX - 12, y);
-        this.ctx.lineTo(moatX + 12, y);
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(moatX - 12, y);
+        ctx.lineTo(moatX + 12, y);
+        ctx.stroke();
       }
 
       // Wooden drawbridge across moat leading road to castle
-      this.ctx.fillStyle = "#5d4037";
-      this.ctx.fillRect(moatX - 22, h * 0.44, 44, h * 0.12);
-      this.ctx.strokeStyle = "#3e2723";
-      this.ctx.lineWidth = 2.5;
-      this.ctx.strokeRect(moatX - 22, h * 0.44, 44, h * 0.12);
+      ctx.fillStyle = "#5d4037";
+      ctx.fillRect(moatX - 22, h * 0.44, 44, h * 0.12);
+      ctx.strokeStyle = "#3e2723";
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(moatX - 22, h * 0.44, 44, h * 0.12);
 
       // Drawbridge wooden planks & iron bolts
       for (let by = h * 0.45; by < h * 0.56; by += 7) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(moatX - 22, by);
-        this.ctx.lineTo(moatX + 22, by);
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(moatX - 22, by);
+        ctx.lineTo(moatX + 22, by);
+        ctx.stroke();
 
-        this.ctx.fillStyle = "#ffd54f";
-        this.ctx.beginPath();
-        this.ctx.arc(moatX - 18, by, 1.5, 0, Math.PI * 2);
-        this.ctx.arc(moatX + 18, by, 1.5, 0, Math.PI * 2);
-        this.ctx.fill();
+        ctx.fillStyle = "#ffd54f";
+        ctx.beginPath();
+        ctx.arc(moatX - 18, by, 1.5, 0, Math.PI * 2);
+        ctx.arc(moatX + 18, by, 1.5, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
-    renderCastle() {
+    renderCastle(ctx = this.ctx) {
       const w = this.width;
       const h = this.height;
       const castleWidth = w * 0.28;
 
       // 1. Rear Castle Keep / Royal Bastion (Deep Left)
-      this.ctx.fillStyle = "#1e2738";
-      this.ctx.fillRect(0, h * 0.22, castleWidth * 0.55, h * 0.56);
+      ctx.fillStyle = "#1e2738";
+      ctx.fillRect(0, h * 0.22, castleWidth * 0.55, h * 0.56);
 
       // Keep crenellations
       for (let y = h * 0.22; y <= h * 0.78; y += 28) {
-        this.ctx.fillStyle = "#253248";
-        this.ctx.fillRect(castleWidth * 0.52, y, 12, 16);
+        ctx.fillStyle = "#253248";
+        ctx.fillRect(castleWidth * 0.52, y, 12, 16);
       }
 
       // 2. North Fortress Tower (Top Left)
-      this.ctx.fillStyle = "#28374d";
-      this.ctx.fillRect(0, 0, castleWidth * 0.7, h * 0.3);
+      ctx.fillStyle = "#28374d";
+      ctx.fillRect(0, 0, castleWidth * 0.7, h * 0.3);
       // North tower roof
-      this.ctx.fillStyle = "#7b1113";
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(castleWidth * 0.35, 0);
-      this.ctx.lineTo(castleWidth * 0.7, h * 0.12);
-      this.ctx.lineTo(0, h * 0.12);
-      this.ctx.closePath();
-      this.ctx.fill();
+      ctx.fillStyle = "#7b1113";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(castleWidth * 0.35, 0);
+      ctx.lineTo(castleWidth * 0.7, h * 0.12);
+      ctx.lineTo(0, h * 0.12);
+      ctx.closePath();
+      ctx.fill();
 
       // 3. South Fortress Tower (Bottom Left)
-      this.ctx.fillStyle = "#28374d";
-      this.ctx.fillRect(0, h * 0.7, castleWidth * 0.7, h * 0.3);
+      ctx.fillStyle = "#28374d";
+      ctx.fillRect(0, h * 0.7, castleWidth * 0.7, h * 0.3);
       // South tower roof
-      this.ctx.fillStyle = "#7b1113";
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, h);
-      this.ctx.lineTo(castleWidth * 0.35, h);
-      this.ctx.lineTo(castleWidth * 0.7, h * 0.88);
-      this.ctx.lineTo(0, h * 0.88);
-      this.ctx.closePath();
-      this.ctx.fill();
+      ctx.fillStyle = "#7b1113";
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      ctx.lineTo(castleWidth * 0.35, h);
+      ctx.lineTo(castleWidth * 0.7, h * 0.88);
+      ctx.lineTo(0, h * 0.88);
+      ctx.closePath();
+      ctx.fill();
 
       // 4. Main Massive Stone Rampart / Forward Wall
       const wallX = castleWidth * 0.58;
       const wallW = castleWidth * 0.42;
 
-      const stoneGrad = this.ctx.createLinearGradient(wallX, 0, wallX + wallW, 0);
+      const stoneGrad = ctx.createLinearGradient(wallX, 0, wallX + wallW, 0);
       stoneGrad.addColorStop(0, "#2c3e50");
       stoneGrad.addColorStop(0.7, "#34495e");
       stoneGrad.addColorStop(1, "#1e2a38");
-      this.ctx.fillStyle = stoneGrad;
-      this.ctx.fillRect(wallX, 0, wallW, h);
+      ctx.fillStyle = stoneGrad;
+      ctx.fillRect(wallX, 0, wallW, h);
 
       // Stone Brick Texture Lines
-      this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
-      this.ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+      ctx.lineWidth = 1.5;
       for (let y = 0; y < h; y += 22) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(wallX, y);
-        this.ctx.lineTo(wallX + wallW, y);
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(wallX, y);
+        ctx.lineTo(wallX + wallW, y);
+        ctx.stroke();
 
         const offset = (y % 44 === 0) ? 0 : 18;
         for (let x = wallX + offset; x < wallX + wallW; x += 36) {
-          this.ctx.beginPath();
-          this.ctx.moveTo(x, y);
-          this.ctx.lineTo(x, y + 22);
-          this.ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, y + 22);
+          ctx.stroke();
         }
       }
 
       // Outer Wall Battlements (Crenellations along the front edge)
       const crenX = wallX + wallW - 12;
       for (let cy = 10; cy < h; cy += 32) {
-        this.ctx.fillStyle = "#1e2b37";
-        this.ctx.fillRect(crenX, cy, 14, 18);
-        this.ctx.fillStyle = "#4a627a";
-        this.ctx.fillRect(crenX, cy, 14, 3);
+        ctx.fillStyle = "#1e2b37";
+        ctx.fillRect(crenX, cy, 14, 18);
+        ctx.fillStyle = "#4a627a";
+        ctx.fillRect(crenX, cy, 14, 3);
       }
 
       // 5. Heavy Portcullis & Iron Gatehouse (Center of wall)
       const gateY = h * 0.46;
       const gateH = h * 0.18;
-      this.ctx.fillStyle = "#11151c";
-      this.ctx.fillRect(wallX + wallW - 20, gateY, 22, gateH);
+      ctx.fillStyle = "#11151c";
+      ctx.fillRect(wallX + wallW - 20, gateY, 22, gateH);
 
       // Iron gate grid
-      this.ctx.strokeStyle = "#7f8c8d";
-      this.ctx.lineWidth = 3;
+      ctx.strokeStyle = "#7f8c8d";
+      ctx.lineWidth = 3;
       for (let gx = wallX + wallW - 18; gx <= wallX + wallW; gx += 6) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(gx, gateY);
-        this.ctx.lineTo(gx, gateY + gateH);
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(gx, gateY);
+        ctx.lineTo(gx, gateY + gateH);
+        ctx.stroke();
       }
 
-      // Castle Wall Decorative Banners & Torches
-      this.renderCastleDecorations(wallX, wallW, h);
+      // Castle Wall Decorative Banners
+      this.renderCastleDecorations(wallX, wallW, h, ctx);
     }
 
-    renderCastleDecorations(wallX, wallW, h) {
+    renderCastleDecorations(wallX, wallW, h, ctx = this.ctx) {
       // Golden Lion/Eagle Shield Insignia above gate
       const bannerX = wallX + wallW - 32;
       const bannerY = h * 0.44;
 
-      this.ctx.fillStyle = "#c0392b";
-      this.ctx.beginPath();
-      this.ctx.moveTo(bannerX, bannerY);
-      this.ctx.lineTo(bannerX + 22, bannerY);
-      this.ctx.lineTo(bannerX + 22, bannerY + 28);
-      this.ctx.lineTo(bannerX + 11, bannerY + 36);
-      this.ctx.lineTo(bannerX, bannerY + 28);
-      this.ctx.closePath();
-      this.ctx.fill();
+      ctx.fillStyle = "#c0392b";
+      ctx.beginPath();
+      ctx.moveTo(bannerX, bannerY);
+      ctx.lineTo(bannerX + 22, bannerY);
+      ctx.lineTo(bannerX + 22, bannerY + 28);
+      ctx.lineTo(bannerX + 11, bannerY + 36);
+      ctx.lineTo(bannerX, bannerY + 28);
+      ctx.closePath();
+      ctx.fill();
 
-      this.ctx.fillStyle = "#f1c40f";
-      this.ctx.font = "bold 14px sans-serif";
-      this.ctx.textAlign = "center";
-      this.ctx.fillText("🛡️", bannerX + 11, bannerY + 20);
+      ctx.fillStyle = "#f1c40f";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("🛡️", bannerX + 11, bannerY + 20);
+    }
 
-      // Flickering Torches along the battlements
+    renderCastleTorches(ctx = this.ctx) {
+      const castleWidth = this.width * 0.28;
+      const wallX = castleWidth * 0.58;
+      const wallW = castleWidth * 0.42;
+      const h = this.height;
+
+      // Flickering Torches along the battlements (rendered dynamically with flicker)
       const torchYList = [h * 0.15, h * 0.35, h * 0.65, h * 0.85];
       torchYList.forEach((ty, idx) => {
         const tx = wallX + wallW + 2;
         // Bracket
-        this.ctx.fillStyle = "#333";
-        this.ctx.fillRect(tx - 6, ty - 2, 8, 4);
+        ctx.fillStyle = "#333";
+        ctx.fillRect(tx - 6, ty - 2, 8, 4);
 
         // Flame glow
         const flicker = Math.sin(this.ambientTime * 8 + idx) * 3;
-        const flameGrad = this.ctx.createRadialGradient(tx + 2, ty, 2, tx + 2, ty, 18 + flicker);
+        const flameGrad = ctx.createRadialGradient(tx + 2, ty, 2, tx + 2, ty, 18 + flicker);
         flameGrad.addColorStop(0, "rgba(255, 230, 100, 0.8)");
         flameGrad.addColorStop(0.4, "rgba(243, 156, 18, 0.5)");
         flameGrad.addColorStop(1, "rgba(231, 76, 60, 0)");
-        this.ctx.fillStyle = flameGrad;
-        this.ctx.beginPath();
-        this.ctx.arc(tx + 2, ty, 18 + flicker, 0, Math.PI * 2);
-        this.ctx.fill();
+        ctx.fillStyle = flameGrad;
+        ctx.beginPath();
+        ctx.arc(tx + 2, ty, 18 + flicker, 0, Math.PI * 2);
+        ctx.fill();
       });
     }
 
@@ -8339,8 +8604,8 @@
     }
 
     renderParticles() {
+      if (this.particles.length === 0) return;
       this.particles.forEach(p => {
-        this.ctx.save();
         const alpha = Math.max(0, Math.min(1, p.life / p.maxLife));
         this.ctx.globalAlpha = alpha;
 
@@ -8353,6 +8618,7 @@
           this.ctx.stroke();
         } else if (p.type === "spark") {
           // Directional elongated bright spark
+          this.ctx.save();
           this.ctx.fillStyle = p.color;
           const ang = Math.atan2(p.vy, p.vx);
           const spd = Math.hypot(p.vx, p.vy);
@@ -8362,14 +8628,18 @@
           this.ctx.beginPath();
           this.ctx.ellipse(0, 0, len, p.size * 0.5, 0, 0, Math.PI * 2);
           this.ctx.fill();
+          this.ctx.restore();
         } else if (p.type === "debris") {
           // Rotating jagged polygon debris / shrapnel
+          this.ctx.save();
           this.ctx.fillStyle = p.color;
           this.ctx.translate(p.x, p.y);
           this.ctx.rotate(p.rot || 0);
           this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.8);
+          this.ctx.restore();
         } else if (p.type === "coin") {
           // Golden spinning coin with metallic rim and specular glint
+          this.ctx.save();
           this.ctx.translate(p.x, p.y);
           const scaleX = Math.cos(p.rot || 0);
           this.ctx.scale(scaleX, 1);
@@ -8385,6 +8655,7 @@
           this.ctx.beginPath();
           this.ctx.arc(-p.size * 0.3, -p.size * 0.3, 1.5, 0, Math.PI * 2);
           this.ctx.fill();
+          this.ctx.restore();
         } else if (p.type === "smoke") {
           // Billowing soft expanding smoke
           this.ctx.fillStyle = p.color;
@@ -8393,6 +8664,7 @@
           this.ctx.fill();
         } else if (p.type === "ice_crystal") {
           // 4-point rotating diamond/star ice crystal
+          this.ctx.save();
           this.ctx.translate(p.x, p.y);
           this.ctx.rotate(p.rot || 0);
           this.ctx.fillStyle = p.color;
@@ -8407,13 +8679,16 @@
           this.ctx.lineTo(-p.size * 0.3, -p.size * 0.3);
           this.ctx.closePath();
           this.ctx.fill();
+          this.ctx.restore();
         } else if (p.type === "holy_mote") {
           // Rising holy cross/star glyph for Castle Repair
+          this.ctx.save();
           this.ctx.translate(p.x, p.y);
           this.ctx.rotate(p.rot || 0);
           this.ctx.fillStyle = p.color;
           this.ctx.fillRect(-p.size / 2, -p.size / 6, p.size, p.size / 3);
           this.ctx.fillRect(-p.size / 6, -p.size / 2, p.size / 3, p.size);
+          this.ctx.restore();
         } else if (p.type === "fire_ember") {
           // Flickering flame ember
           this.ctx.fillStyle = p.color;
@@ -8439,24 +8714,24 @@
           this.ctx.arc(p.x, p.y, Math.max(1, p.size), 0, Math.PI * 2);
           this.ctx.fill();
         }
-
-        this.ctx.restore();
       });
+      this.ctx.globalAlpha = 1.0;
     }
 
     renderFloatingText() {
+      if (this.floatingTexts.length === 0) return;
+      this.ctx.save();
+      this.ctx.textAlign = "center";
+      this.ctx.shadowColor = "rgba(0,0,0,0.8)";
+      this.ctx.shadowBlur = 4;
       this.floatingTexts.forEach(ft => {
-        this.ctx.save();
-        const alpha = ft.life / ft.maxLife;
-        this.ctx.globalAlpha = Math.max(0, alpha);
+        const alpha = Math.max(0, ft.life / ft.maxLife);
+        this.ctx.globalAlpha = alpha;
         this.ctx.fillStyle = ft.color;
         this.ctx.font = `bold ${Math.round(14 * ft.scale)}px sans-serif`;
-        this.ctx.textAlign = "center";
-        this.ctx.shadowColor = "rgba(0,0,0,0.8)";
-        this.ctx.shadowBlur = 4;
         this.ctx.fillText(ft.text, ft.x, ft.y);
-        this.ctx.restore();
       });
+      this.ctx.restore();
     }
 
     renderPlacementPreview() {

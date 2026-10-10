@@ -210,14 +210,14 @@
     <footer id="bottom-shop">
       <!-- Main Category Buttons: الأسلحة & الجيش -->
       <div id="war-category-bar" class="war-category-bar">
-        <button id="btn-category-weapons" class="category-toggle-btn wpn-cat-btn" title="عرض أسلحة وأبراج القلعة">
+        <button id="btn-category-weapons" class="category-toggle-btn wpn-cat-btn active" title="عرض أسلحة وأبراج القلعة">
           <div class="cat-btn-glow"></div>
           <div class="cat-icon-badge">🏹</div>
           <div class="cat-info">
             <span class="cat-title" data-i18n="catWeapons">الأسلحة 🏹</span>
             <span class="cat-sub" data-i18n="catWeaponsSub">أبراج ودفاعات القلعة</span>
           </div>
-          <span class="cat-indicator" id="wpn-indicator">▾</span>
+          <span class="cat-indicator" id="wpn-indicator">▴</span>
         </button>
 
         <button id="btn-category-army" class="category-toggle-btn army-cat-btn" title="عرض فيلق الجيش وقوات الميدان">
@@ -234,10 +234,10 @@
         </button>
       </div>
 
-      <!-- Organized Drawer Panels (تفتح فقط عند الضغط على الزر المطلوب) -->
-      <div id="war-drawer-container" class="war-drawer-container collapsed">
-        <!-- 1. Weapons Panel: يظهر فقط عند الضغط على زر الأسلحة -->
-        <div id="drawer-weapons-panel" class="drawer-panel hidden" style="display: none;">
+      <!-- Organized Drawer Panels (تفتح وتنتقل بسلاسة وفورية) -->
+      <div id="war-drawer-container" class="war-drawer-container">
+        <!-- 1. Weapons Panel: يظهر عند اختيار الأسلحة (مفتوح افتراضياً) -->
+        <div id="drawer-weapons-panel" class="drawer-panel" style="display: flex;">
           <div class="drawer-header">
             <div class="drawer-title-group">
               <span class="drawer-icon">🏹</span>

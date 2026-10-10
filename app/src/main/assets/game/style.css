@@ -894,6 +894,13 @@ html, body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation !important;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: rgba(241, 196, 15, 0.3);
+}
+
+.category-toggle-btn * {
+  pointer-events: none;
 }
 
 /* Weapons Category Button Styling */
@@ -1228,6 +1235,10 @@ html, body {
   transition: all 0.2s ease;
   position: relative;
   min-height: 52px;
+  touch-action: manipulation !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: rgba(52, 152, 219, 0.4);
 }
 
 .army-card:hover {
@@ -1294,6 +1305,10 @@ html, body {
   transition: all 0.2s ease;
   position: relative;
   min-height: 52px;
+  touch-action: manipulation !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 206, 201, 0.4);
 }
 
 .weapon-card:hover {
